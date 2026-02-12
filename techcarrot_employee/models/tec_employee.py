@@ -140,6 +140,54 @@ class HrEmployeeInherit(models.Model):
         ondelete={'onsite': 'set null', 'offshore': 'set null', 'near-shore': 'set null'}
     )
 
+    emp_code = fields.Char(
+        string='Emp Code',
+        copy=False,
+        index=True,
+        readonly=True,
+        store=True,
+        help="Unique employee code (e.g., P0001, TCIP0012, BC0005)"
+    )
+
+    employee_code = fields.Char(
+        string='Employee Code',
+        copy=False,
+        index=True,
+        readonly=True,
+        store=True,
+        help="Unique employee code (e.g., P0001, TCIP0012, BC0005)"
+    )
+
+    line_manager_id = fields.Many2one('hr.employee', string='Line Manager', copy=False)
+    # SELECTION FIELDS - Shown as dropdowns in Odoo UI
+    # engagement_location = fields.Selection(
+    #     [
+    #         ('onsite', 'Onsite'),
+    #         ('offshore', 'Offshore'),
+    #         ('near-shore', 'Nearshore'),
+    #     ],
+    #     string='Engagement Location',
+    #     ondelete={'onsite': 'set null', 'offshore': 'set null', 'near-shore': 'set null'}
+    # )
+
+    payroll_location = fields.Selection([
+        ('dubai-onsite', 'Dubai- Onsite'),
+        ('dubai-offshore', 'Dubai-Offshore'),
+        ('tcip-india', 'TCIP India'),
+    ], string='Payroll',
+        ondelete={'dubai-onsite': 'set null', 'dubai-offshore': 'set null', 'tcip-india': 'set null'}
+    )
+
+    employment_type = fields.Selection([
+        ('permanent', 'Permanent'),
+        ('temporary', 'Temporary'),
+        ('bootcamp', 'Bootcamp'),
+        ('seconded', 'Seconded'),
+        ('freelancer', 'Freelancer'),
+    ], string='Employment Type',
+        ondelete={'permanent': 'set null', 'temporary': 'set null', 'bootcamp': 'set null',
+                  'seconded': 'set null', 'freelancer': 'set null'}
+    )
 
     created_by = fields.Many2one('res.users', string='Created By', readonly=True, copy=False)
     created_date_time = fields.Datetime('Created Date and Time', readonly=True, copy=False)
