@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Manager Approval Template -->
+    <record id="email_template_manager_approval" model="mail.template">
+        <field name="name">IT Ticket - Manager Approval</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="subject">Approval Required: ${object.name}</field>
+        <field name="email_to">${object.line_manager_id.email}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear ${object.line_manager_id.name},</p>
+            <p>A new IT ticket requires your approval:</p>
+            <ul>
+                <li>Ticket: ${object.name}</li>
+                <li>Employee: ${object.employee_id.name}</li>
+                <li>Type: ${object.ticket_type}</li>
+                <li>Subject: ${object.subject}</li>
+            </ul>
+            <p><a href="/web#id=${object.id}&model=it.ticket&view_type=form">View Ticket</a></p>
+        ]]></field>
+    </record>
+
+    <!-- IT Manager Approval Template -->
+    <record id="email_template_it_approval" model="mail.template">
+        <field name="name">IT Ticket - IT Manager Approval</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="subject">IT Approval Required: ${object.name}</field>
+        <field name="email_to">${object.it_manager_id.email}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear ${object.it_manager_id.name},</p>
+            <p>An IT ticket has been approved by line manager and requires your approval:</p>
+            <ul>
+                <li>Ticket: ${object.name}</li>
+                <li>Employee: ${object.employee_id.name}</li>
+                <li>Approved by: ${object.line_manager_id.name}</li>
+            </ul>
+            <p><a href="/web#id=${object.id}&model=it.ticket&view_type=form">View Ticket</a></p>
+        ]]></field>
+    </record>
+
+    <!-- IT Team Assignment Template -->
+    <record id="email_template_it_assigned" model="mail.template">
+        <field name="name">IT Ticket - Assigned</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="subject">New Ticket Assigned: ${object.name}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear IT Team,</p>
+            <p>A new ticket has been assigned:</p>
+            <ul>
+                <li>Ticket: ${object.name}</li>
+                <li>Employee: ${object.employee_id.name}</li>
+                <li>Type: ${object.ticket_type}</li>
+            </ul>
+            <p><a href="/web#id=${object.id}&model=it.ticket&view_type=form">Start Working</a></p>
+        ]]></field>
+    </record>
+
+    <!-- Rejection Template -->
+    <record id="email_template_rejection" model="mail.template">
+        <field name="name">IT Ticket - Rejected</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="subject">Ticket Rejected: ${object.name}</field>
+        <field name="email_to">${object.partner_id.email}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear ${object.employee_id.name},</p>
+            <p>Your ticket has been rejected:</p>
+            <ul>
+                <li>Ticket: ${object.name}</li>
+                <li>Rejected by: ${object.rejected_by_id.name}</li>
+                <li>Reason: ${object.rejection_reason}</li>
+            </ul>
+        ]]></field>
+    </record>
+
+    <!-- Done Template -->
+    <record id="email_template_done" model="mail.template">
+        <field name="name">IT Ticket - Done</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="subject">Ticket Resolved: ${object.name}</field>
+        <field name="email_to">${object.partner_id.email}</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear ${object.employee_id.name},</p>
+            <p>Your IT ticket has been resolved:</p>
+            <ul>
+                <li>Ticket: ${object.name}</li>
+                <li>Type: ${object.ticket_type}</li>
+                <li>Subject: ${object.subject}</li>
+            </ul>
+        ]]></field>
+    </record>
+</odoo>

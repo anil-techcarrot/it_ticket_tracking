@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_it_ticket_portal,it.ticket.portal,model_it_ticket,base.group_portal,1,1,1,0
+access_it_ticket_manager,it.ticket.manager,model_it_ticket,group_it_manager,1,1,1,1
+access_it_ticket_team,it.ticket.team,model_it_ticket,group_it_team,1,1,1,0
+access_it_ticket_reject_wizard,it.ticket.reject.wizard,model_it_ticket_reject_wizard,base.group_user,1,1,1,1

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_it_ticket" model="ir.sequence">
+        <field name="name">IT Ticket</field>
+        <field name="code">it.ticket</field>
+        <field name="prefix">IT-</field>
+        <field name="padding">5</field>
+        <field name="number_next">1</field>
+    </record>
+</odoo>

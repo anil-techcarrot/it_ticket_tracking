@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Auto-submit on create for portal users -->
+    <record id="action_auto_submit_portal" model="base.automation">
+        <field name="name">IT Ticket: Auto Submit for Portal Users</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="trigger">on_create</field>
+        <field name="state">code</field>
+        <field name="code">
+if env.user.has_group('base.group_portal'):
+    record.action_submit()
+        </field>
+    </record>
+</odoo>

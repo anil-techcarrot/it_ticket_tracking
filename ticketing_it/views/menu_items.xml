@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_it_tickets_root" name="IT Tickets" sequence="10"/>
+
+    <menuitem id="menu_it_tickets_all"
+              name="All Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_all"
+              sequence="10"/>
+
+    <menuitem id="menu_it_tickets_pending_manager"
+              name="Pending My Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_manager"
+              sequence="20"/>
+
+    <menuitem id="menu_it_tickets_pending_it"
+              name="Pending IT Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_it"
+              groups="it_ticketing.group_it_manager"
+              sequence="30"/>
+</odoo>

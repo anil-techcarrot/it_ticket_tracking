@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_it_ticket_form" model="ir.ui.view">
+        <field name="name">it.ticket.form</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <form string="IT Ticket">
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_manager_approve" string="Approve" type="object"
+                            class="oe_highlight" invisible="state != 'manager_approval'"
+                            groups="base.group_user"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state not in ['manager_approval', 'it_approval']"
+                            groups="base.group_user"/>
+                    <button name="action_it_approve" string="IT Approve" type="object"
+                            class="oe_highlight" invisible="state != 'it_approval'"
+                            groups="it_ticketing.group_it_manager"/>
+                    <button name="action_start_work" string="Start Work" type="object"
+                            invisible="state != 'assigned'"
+                            groups="it_ticketing.group_it_team"/>
+                    <button name="action_done" string="Mark Done" type="object"
+                            class="oe_highlight" invisible="state != 'in_progress'"
+                            groups="it_ticketing.group_it_team"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="department_id"/>
+                            <field name="ticket_type"/>
+                            <field name="priority" widget="priority"/>
+                        </group>
+                        <group>
+                            <field name="line_manager_id"/>
+                            <field name="it_manager_id"/>
+                            <field name="required_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="subject"/>
+                        <field name="description"/>
+                    </group>
+                    <notebook>
+                        <page string="Approval Info">
+                            <group>
+                                <group>
+                                    <field name="submitted_date"/>
+                                    <field name="manager_approval_date"/>
+                                    <field name="it_approval_date"/>
+                                </group>
+                                <group>
+                                    <field name="assigned_to_id"/>
+                                    <field name="done_date"/>
+                                </group>
+                            </group>
+                            <group string="Rejection" invisible="state != 'rejected'">
+                                <field name="rejected_by_id"/>
+                                <field name="rejected_date"/>
+                                <field name="rejection_reason"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_it_ticket_tree" model="ir.ui.view">
+        <field name="name">it.ticket.tree</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <tree string="IT Tickets">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="ticket_type"/>
+                <field name="priority" widget="priority"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_it_ticket_all" model="ir.actions.act_window">
+        <field name="name">All Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
+        <field name="name">Pending My Approval</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'manager_approval'), ('line_manager_id', '=', uid)]</field>
+    </record>
+
+    <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
+        <field name="name">Pending IT Approval</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'it_approval')]</field>
+    </record>
+</odoo>
