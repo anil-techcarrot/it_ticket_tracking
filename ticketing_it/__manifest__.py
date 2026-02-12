@@ -17,7 +17,7 @@
         'security/ir.model.access.csv',
         'data/ir_sequence.xml',
         'data/email_templates.xml',
-        'data/automated_actions.xml',
+        # 'data/automated_actions.xml',
         'views/it_ticket_views.xml',
         'views/portal_templates.xml',
         'views/menu_items.xml',
