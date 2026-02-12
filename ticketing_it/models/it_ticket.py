@@ -89,7 +89,7 @@ class ITTicket(models.Model):
     @api.depends('department_id')
     def _compute_it_manager(self):
         for ticket in self:
-            it_manager_group = self.env.ref('it_ticketing.group_it_manager', raise_if_not_found=False)
+            it_manager_group = self.env.ref('ticketing_it.group_it_manager', raise_if_not_found=False)
             if it_manager_group:
                 ticket.it_manager_id = it_manager_group.users[0] if it_manager_group.users else False
             else:
