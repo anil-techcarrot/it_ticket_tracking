@@ -3,12 +3,10 @@
     <!-- Security Groups -->
     <record id="group_it_manager" model="res.groups">
         <field name="name">IT Manager</field>
-        <field name="application_id" ref="base.module_category_services"/>
     </record>
 
     <record id="group_it_team" model="res.groups">
         <field name="name">IT Support Team</field>
-        <field name="application_id" ref="base.module_category_services"/>
     </record>
 
     <!-- Record Rules -->
