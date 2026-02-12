@@ -14,7 +14,7 @@
     ],
     'data': [
         # 'security/security.xml',
-        'security/ir.model.access.csv',
+        # 'security/ir.model.access.csv',
         'data/ir_sequence.xml',
         'data/email_templates.xml',
         'data/automated_actions.xml',
