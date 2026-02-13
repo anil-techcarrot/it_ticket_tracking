@@ -18,6 +18,6 @@
               name="Pending IT Approval"
               parent="menu_it_tickets_root"
               action="action_it_ticket_pending_it"
-              groups="it_ticketing.group_it_manager"
+              groups="ticketing_it.group_it_manager"
               sequence="30"/>
 </odoo>
