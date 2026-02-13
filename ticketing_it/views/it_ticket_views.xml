@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- TREE VIEW -->
-    <record id="view_it_ticket_tree" model="ir.ui.view">
-        <field name="name">it.ticket.tree</field>
+    <!-- LIST VIEW -->
+    <record id="view_it_ticket_list" model="ir.ui.view">
+        <field name="name">it.ticket.list</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="employee_id"/>
                 <field name="ticket_type"/>
                 <field name="priority"/>
                 <field name="state"/>
                 <field name="create_date"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -96,20 +96,20 @@
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','manager_approval')]</field>
     </record>
 
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','it_approval')]</field>
     </record>
 
