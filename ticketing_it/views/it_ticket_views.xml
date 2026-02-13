@@ -8,21 +8,25 @@
             <form string="IT Ticket">
                 <header>
                     <button name="action_submit" string="Submit" type="object"
-                            class="oe_highlight" invisible="state != 'draft'"/>
+                            class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
                     <button name="action_manager_approve" string="Approve" type="object"
-                            class="oe_highlight" invisible="state != 'manager_approval'"
+                            class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'manager_approval')]}"
                             groups="base.group_user"/>
                     <button name="action_reject" string="Reject" type="object"
-                            invisible="state not in ['manager_approval', 'it_approval']"
+                            attrs="{'invisible': [('state', 'not in', ['manager_approval', 'it_approval'])]}"
                             groups="base.group_user"/>
                     <button name="action_it_approve" string="IT Approve" type="object"
-                            class="oe_highlight" invisible="state != 'it_approval'"
+                            class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'it_approval')]}"
                             groups="ticketing_it.group_it_manager"/>
                     <button name="action_start_work" string="Start Work" type="object"
-                            invisible="state != 'assigned'"
+                            attrs="{'invisible': [('state', '!=', 'assigned')]}"
                             groups="ticketing_it.group_it_team"/>
                     <button name="action_done" string="Mark Done" type="object"
-                            class="oe_highlight" invisible="state != 'in_progress'"
+                            class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'in_progress')]}"
                             groups="ticketing_it.group_it_team"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
@@ -63,7 +67,7 @@
                                     <field name="done_date"/>
                                 </group>
                             </group>
-                            <group string="Rejection" invisible="state != 'rejected'">
+                            <group string="Rejection" attrs="{'invisible': [('state', '!=', 'rejected')]}">
                                 <field name="rejected_by_id"/>
                                 <field name="rejected_date"/>
                                 <field name="rejection_reason"/>
@@ -80,7 +84,7 @@
         </field>
     </record>
 
-    <!-- List View (renamed from Tree in Odoo 19) -->
+    <!-- List View -->
     <record id="view_it_ticket_list" model="ir.ui.view">
         <field name="name">it.ticket.list</field>
         <field name="model">it.ticket</field>
