@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="portal_my_home_menu_it_tickets" name="Portal My Home: IT Tickets"
-              inherit_id="portal.portal_my_home" priority="40">
+
+    <!-- Add to Portal Homepage -->
+    <template id="portal_my_home_menu_it_tickets"
+              name="Portal My Home: IT Tickets"
+              inherit_id="portal.portal_my_home"
+              priority="40">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-call="portal.portal_docs_entry">
                 <t t-set="title">IT Tickets</t>
@@ -10,4 +14,231 @@
             </t>
         </xpath>
     </template>
+
+    <!-- Ticket List Page -->
+    <template id="portal_my_tickets" name="My IT Tickets">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">IT Tickets</t>
+            </t>
+
+            <div class="container mt-3">
+                <div class="row">
+                    <div class="col-12">
+                        <a href="/my/tickets/new" class="btn btn-primary mb-3">
+                            <i class="fa fa-plus"/> Create New Ticket
+                        </a>
+                    </div>
+                </div>
+
+                <t t-if="not tickets">
+                    <div class="alert alert-info">
+                        No tickets found. Create your first ticket!
+                    </div>
+                </t>
+
+                <t t-if="tickets">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Ticket #</th>
+                                <th>Subject</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="tickets" t-as="ticket">
+                                <tr>
+                                    <td>
+                                        <a t-attf-href="/my/tickets/#{ticket.id}">
+                                            <t t-esc="ticket.name"/>
+                                        </a>
+                                    </td>
+                                    <td><t t-esc="ticket.subject"/></td>
+                                    <td><t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/></td>
+                                    <td>
+                                        <t t-if="ticket.priority == '3'">
+                                            <span class="badge badge-danger">Urgent</span>
+                                        </t>
+                                        <t t-elif="ticket.priority == '2'">
+                                            <span class="badge badge-warning">High</span>
+                                        </t>
+                                        <t t-elif="ticket.priority == '1'">
+                                            <span class="badge badge-info">Normal</span>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="badge badge-secondary">Low</span>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <span t-attf-class="badge badge-{{
+                                            'success' if ticket.state == 'done' else
+                                            'danger' if ticket.state == 'rejected' else
+                                            'warning' if ticket.state in ['manager_approval', 'it_approval'] else
+                                            'info'
+                                        }}">
+                                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                                        </span>
+                                    </td>
+                                    <td><t t-esc="ticket.create_date.strftime('%Y-%m-%d')"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div t-if="pager" class="o_portal_pager text-center">
+                        <t t-call="portal.pager"/>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- Create Ticket Form -->
+    <template id="portal_create_ticket_form" name="Create IT Ticket">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-3">
+                <h2>Create New IT Ticket</h2>
+
+                <form action="/my/tickets/submit" method="POST" class="mt-4">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div class="form-group">
+                        <label for="ticket_type">Ticket Type *</label>
+                        <select name="ticket_type" class="form-control" required="required">
+                            <option value="">-- Select Type --</option>
+                            <option value="hardware">Hardware Issue</option>
+                            <option value="software">Software Issue</option>
+                            <option value="social_media">Social Media Access</option>
+                            <option value="network">Network Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priority *</label>
+                        <select name="priority" class="form-control" required="required">
+                            <option value="1" selected="selected">Normal</option>
+                            <option value="2">High</option>
+                            <option value="3">Urgent</option>
+                            <option value="0">Low</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject *</label>
+                        <input type="text" name="subject" class="form-control" required="required"
+                               placeholder="Brief description of the issue"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea name="description" class="form-control" rows="5" required="required"
+                                  placeholder="Detailed description of the issue"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="required_date">Required By Date (Optional)</label>
+                        <input type="date" name="required_date" class="form-control"/>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-paper-plane"/> Submit Ticket
+                        </button>
+                        <a href="/my/tickets" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </t>
+    </template>
+
+    <!-- Ticket Detail Page -->
+    <template id="portal_ticket_detail" name="Ticket Detail">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-3">
+                <div class="row">
+                    <div class="col-12">
+                        <a href="/my/tickets" class="btn btn-secondary mb-3">
+                            <i class="fa fa-arrow-left"/> Back to Tickets
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><t t-esc="ticket.name"/> - <t t-esc="ticket.subject"/></h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type:</strong> <t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/></p>
+                                <p><strong>Priority:</strong>
+                                    <t t-if="ticket.priority == '3'">
+                                        <span class="badge badge-danger">Urgent</span>
+                                    </t>
+                                    <t t-elif="ticket.priority == '2'">
+                                        <span class="badge badge-warning">High</span>
+                                    </t>
+                                    <t t-elif="ticket.priority == '1'">
+                                        <span class="badge badge-info">Normal</span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="badge badge-secondary">Low</span>
+                                    </t>
+                                </p>
+                                <p><strong>Status:</strong>
+                                    <span t-attf-class="badge badge-{{
+                                        'success' if ticket.state == 'done' else
+                                        'danger' if ticket.state == 'rejected' else
+                                        'warning' if ticket.state in ['manager_approval', 'it_approval'] else
+                                        'info'
+                                    }}">
+                                        <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Created:</strong> <t t-esc="ticket.create_date.strftime('%Y-%m-%d %H:%M')"/></p>
+                                <p t-if="ticket.required_date"><strong>Required By:</strong> <t t-esc="ticket.required_date"/></p>
+                                <p t-if="ticket.line_manager_id"><strong>Line Manager:</strong> <t t-esc="ticket.line_manager_id.name"/></p>
+                            </div>
+                        </div>
+
+                        <hr/>
+
+                        <h5>Description:</h5>
+                        <div t-field="ticket.description"/>
+
+                        <t t-if="ticket.state == 'rejected'">
+                            <hr/>
+                            <div class="alert alert-danger">
+                                <h5>Rejection Reason:</h5>
+                                <p><t t-esc="ticket.rejection_reason"/></p>
+                                <p><small>Rejected by: <t t-esc="ticket.rejected_by_id.name"/> on <t t-esc="ticket.rejected_date.strftime('%Y-%m-%d %H:%M')"/></small></p>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- No Employee Error -->
+    <template id="portal_no_employee" name="No Employee">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-5">
+                <div class="alert alert-warning">
+                    <h4>No Employee Record Found</h4>
+                    <p>You don't have an employee record linked to your user account. Please contact your administrator.</p>
+                </div>
+            </div>
+        </t>
+    </template>
+
 </odoo>
