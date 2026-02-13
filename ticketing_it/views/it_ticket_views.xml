@@ -8,35 +8,42 @@
             <form string="IT Ticket">
                 <header>
 
-                    <button name="action_submit" string="Submit"
+                    <button name="action_submit"
+                            string="Submit"
                             type="object"
                             class="oe_highlight"
-                            attrs="{'invisible': [('state','!=','draft')]}"/>
+                            invisible="state != 'draft'"/>
 
-                    <button name="action_manager_approve" string="Approve"
+                    <button name="action_manager_approve"
+                            string="Approve"
                             type="object"
                             class="oe_highlight"
-                            attrs="{'invisible': [('state','!=','manager_approval')]}"/>
+                            invisible="state != 'manager_approval'"/>
 
-                    <button name="action_reject" string="Reject"
+                    <button name="action_reject"
+                            string="Reject"
                             type="object"
-                            attrs="{'invisible': [('state','not in',['manager_approval','it_approval'])]}"/>
+                            invisible="state not in ['manager_approval','it_approval']"/>
 
-                    <button name="action_it_approve" string="IT Approve"
-                            type="object"
-                            class="oe_highlight"
-                            attrs="{'invisible': [('state','!=','it_approval')]}"/>
-
-                    <button name="action_start_work" string="Start Work"
-                            type="object"
-                            attrs="{'invisible': [('state','!=','assigned')]}"/>
-
-                    <button name="action_done" string="Mark Done"
+                    <button name="action_it_approve"
+                            string="IT Approve"
                             type="object"
                             class="oe_highlight"
-                            attrs="{'invisible': [('state','!=','in_progress')]}"/>
+                            invisible="state != 'it_approval'"/>
 
-                    <field name="state" widget="statusbar"
+                    <button name="action_start_work"
+                            string="Start Work"
+                            type="object"
+                            invisible="state != 'assigned'"/>
+
+                    <button name="action_done"
+                            string="Mark Done"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'in_progress'"/>
+
+                    <field name="state"
+                           widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done,rejected"/>
 
                 </header>
