@@ -141,34 +141,42 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """Get IT manager from group"""
         for rec in self:
-            it_manager_group = self.env.ref('ticketing_it.group_it_manager', raise_if_not_found=False)
+            it_manager_group = self.env.ref(
+                'ticketing_it.group_it_manager',
+                raise_if_not_found=False
+            )
             if it_manager_group and it_manager_group.users:
                 rec.it_manager_id = it_manager_group.users[0]
             else:
                 rec.it_manager_id = False
 
     # =========================================================
-    # WORKFLOW ACTION METHODS (WITH EMAIL SENDING)
+    # CREATE (ODOO 19 SAFE)
     # =========================================================
 
-    @api.model
-    def create(self, vals):
-        """Auto-generate ticket number"""
-        if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or 'New'
+    @api.model_create_multi
+    def create(self, vals_list):
 
-        record = super(ITTicket, self).create(vals)
+        for vals in vals_list:
+            # Generate sequence
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or 'New'
 
-        # Auto-submit for portal users
-        if self.env.user.has_group('base.group_portal'):
-            record.action_submit()
+        records = super().create(vals_list)
 
-        return record
+        # Auto-submit only for portal users
+        for record in records:
+            if record.env.user.has_group('base.group_portal'):
+                record.action_submit()
+
+        return records
+
+    # =========================================================
+    # WORKFLOW METHODS
+    # =========================================================
 
     def action_submit(self):
-        """Submit ticket and send email to line manager"""
         for rec in self:
             if not rec.line_manager_id:
                 raise UserError(_("No line manager found for employee: %s") % rec.employee_id.name)
@@ -176,12 +184,13 @@ class ITTicket(models.Model):
             rec.state = 'manager_approval'
             rec.submitted_date = fields.Datetime.now()
 
-            # Send email to line manager
-            template = self.env.ref('ticketing_it.email_template_manager_approval', raise_if_not_found=False)
+            template = self.env.ref(
+                'ticketing_it.email_template_manager_approval',
+                raise_if_not_found=False
+            )
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Create activity for line manager
             rec.activity_schedule(
                 'mail.mail_activity_data_todo',
                 user_id=rec.line_manager_id.id,
@@ -189,14 +198,11 @@ class ITTicket(models.Model):
                 note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
             )
 
-            # Post message in chatter
             rec.message_post(
-                body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name,
-                message_type='notification'
+                body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
             )
 
     def action_manager_approve(self):
-        """Manager approves and sends to IT Manager"""
         for rec in self:
             if self.env.user != rec.line_manager_id:
                 raise UserError(_("Only the line manager can approve this ticket"))
@@ -204,15 +210,15 @@ class ITTicket(models.Model):
             rec.state = 'it_approval'
             rec.manager_approval_date = fields.Datetime.now()
 
-            # Clear line manager activity
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send email to IT manager
-            template = self.env.ref('ticketing_it.email_template_it_approval', raise_if_not_found=False)
+            template = self.env.ref(
+                'ticketing_it.email_template_it_approval',
+                raise_if_not_found=False
+            )
             if template and rec.it_manager_id:
                 template.send_mail(rec.id, force_send=True)
 
-            # Create activity for IT manager
             if rec.it_manager_id:
                 rec.activity_schedule(
                     'mail.mail_activity_data_todo',
@@ -221,14 +227,11 @@ class ITTicket(models.Model):
                     note=_('Ticket approved by line manager. Please review.')
                 )
 
-            # Post message
             rec.message_post(
-                body=_("Approved by Line Manager. Sent to IT Manager"),
-                message_type='notification'
+                body=_("Approved by Line Manager. Sent to IT Manager")
             )
 
     def action_it_approve(self):
-        """IT Manager approves and assigns to IT team"""
         for rec in self:
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 raise UserError(_("Only IT managers can approve this ticket"))
@@ -236,48 +239,43 @@ class ITTicket(models.Model):
             rec.state = 'assigned'
             rec.it_approval_date = fields.Datetime.now()
 
-            # Clear IT manager activity
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send email to IT team
-            template = self.env.ref('ticketing_it.email_template_it_assigned', raise_if_not_found=False)
+            template = self.env.ref(
+                'ticketing_it.email_template_it_assigned',
+                raise_if_not_found=False
+            )
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Post message
             rec.message_post(
-                body=_("Approved by IT Manager. Assigned to IT Team"),
-                message_type='notification'
+                body=_("Approved by IT Manager. Assigned to IT Team")
             )
 
     def action_start_work(self):
-        """IT team starts working"""
         for rec in self:
             rec.state = 'in_progress'
             rec.message_post(
-                body=_("Work started by %s") % self.env.user.name,
-                message_type='notification'
+                body=_("Work started by %s") % self.env.user.name
             )
 
     def action_done(self):
-        """Mark ticket as done and notify employee"""
         for rec in self:
             rec.state = 'done'
             rec.done_date = fields.Datetime.now()
 
-            # Send resolution email to employee
-            template = self.env.ref('ticketing_it.email_template_done', raise_if_not_found=False)
+            template = self.env.ref(
+                'ticketing_it.email_template_done',
+                raise_if_not_found=False
+            )
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Post message
             rec.message_post(
-                body=_("Ticket completed and employee notified"),
-                message_type='notification'
+                body=_("Ticket completed and employee notified")
             )
 
     def action_reject(self):
-        """Open rejection wizard"""
         self.ensure_one()
         return {
             'name': _('Reject Ticket'),
@@ -289,30 +287,31 @@ class ITTicket(models.Model):
         }
 
     def do_reject(self, reason):
-        """Actually perform rejection (called by wizard)"""
         for rec in self:
             rec.state = 'rejected'
             rec.rejection_reason = reason
             rec.rejected_by_id = self.env.user
             rec.rejected_date = fields.Datetime.now()
 
-            # Clear any pending activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send rejection email to employee
-            template = self.env.ref('ticketing_it.email_template_rejection', raise_if_not_found=False)
+            template = self.env.ref(
+                'ticketing_it.email_template_rejection',
+                raise_if_not_found=False
+            )
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Post message
             rec.message_post(
-                body=_("Ticket rejected by %s<br/>Reason: %s") % (self.env.user.name, reason),
-                message_type='notification'
+                body=_("Ticket rejected by %s<br/>Reason: %s") %
+                     (self.env.user.name, reason)
             )
 
-    # Portal method
+    # =========================================================
+    # PORTAL ACCESS URL
+    # =========================================================
+
     def _compute_access_url(self):
-        """Compute portal URL"""
-        super(ITTicket, self)._compute_access_url()
+        super()._compute_access_url()
         for ticket in self:
             ticket.access_url = '/my/tickets/%s' % ticket.id
