@@ -1,30 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- LIST VIEW -->
+    <!-- LIST VIEW - WITH PROPER CLICK BEHAVIOR -->
     <record id="view_it_ticket_list" model="ir.ui.view">
         <field name="name">it.ticket.list</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
+            <list string="IT Tickets" default_order="create_date desc">
+                <field name="name" string="Ticket #"/>
                 <field name="employee_id"/>
                 <field name="ticket_type"/>
-                <field name="priority"/>
-                <field name="state"/>
+                <field name="priority" widget="priority"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='done'"
+                       decoration-danger="state=='rejected'"
+                       decoration-warning="state in ['manager_approval','it_approval']"/>
                 <field name="create_date"/>
             </list>
         </field>
     </record>
 
-    <!-- FORM VIEW -->
+    <!-- FORM VIEW - WITH APPROVE/REJECT BUTTONS -->
     <record id="view_it_ticket_form" model="ir.ui.view">
         <field name="name">it.ticket.form</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
             <form string="IT Ticket">
                 <header>
-
                     <button name="action_submit"
                             string="Submit"
                             type="object"
@@ -61,13 +63,13 @@
 
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done,rejected"/>
-
+                           statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
                 </header>
 
                 <sheet>
                     <group>
                         <group>
+                            <field name="name" readonly="1"/>
                             <field name="employee_id"/>
                             <field name="ticket_type"/>
                             <field name="priority" widget="priority"/>
@@ -75,42 +77,73 @@
                         <group>
                             <field name="subject"/>
                             <field name="required_date"/>
+                            <field name="line_manager_id" readonly="1"/>
+                            <field name="it_manager_id" readonly="1"/>
                         </group>
                     </group>
 
-                    <group>
-                        <field name="description"/>
-                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Rejection Info" invisible="state != 'rejected'">
+                            <group>
+                                <field name="rejected_by_id"/>
+                                <field name="rejected_date"/>
+                                <field name="rejection_reason"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
 
                 <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
                     <field name="message_ids"/>
                 </div>
-
             </form>
         </field>
     </record>
 
-    <!-- ACTIONS -->
+    <!-- ACTIVITY VIEW -->
+    <record id="view_it_ticket_activity" model="ir.ui.view">
+        <field name="name">it.ticket.activity</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <activity string="IT Tickets">
+                <templates>
+                    <div t-name="activity-box">
+                        <field name="name"/>
+                        <field name="employee_id"/>
+                        <field name="state" widget="badge"/>
+                    </div>
+                </templates>
+            </activity>
+        </field>
+    </record>
 
+    <!-- ACTIONS - EXPLICIT VIEW CONFIGURATION -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,activity</field>
+        <field name="context">{}</field>
     </record>
 
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,activity</field>
         <field name="domain">[('state','=','manager_approval')]</field>
+        <field name="context">{}</field>
     </record>
 
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,activity</field>
         <field name="domain">[('state','=','it_approval')]</field>
+        <field name="context">{}</field>
     </record>
 
 </odoo>
