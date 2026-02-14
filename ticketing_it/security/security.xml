@@ -10,6 +10,7 @@
     </record>
 
     <!-- Record Rules -->
+
     <!-- Portal users see only their tickets -->
     <record id="rule_it_ticket_portal" model="ir.rule">
         <field name="name">Portal: Own Tickets Only</field>
@@ -17,32 +18,44 @@
         <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Internal users see all tickets -->
+    <record id="rule_it_ticket_user" model="ir.rule">
+        <field name="name">Internal User: All Tickets</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- Managers see direct reports' tickets -->
-    <record id="rule_it_ticket_manager" model="ir.rule">
-        <field name="name">Manager: Direct Reports Tickets</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('employee_id.parent_id.user_id', '=', user.id)]</field>
-        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
-
-    <!-- IT Team sees all tickets -->
+    <!-- IT Team sees all tickets with full access -->
     <record id="rule_it_ticket_it_team" model="ir.rule">
-        <field name="name">IT Team: All Tickets</field>
+        <field name="name">IT Team: Full Access</field>
         <field name="model_id" ref="model_it_ticket"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('group_it_team'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="False"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- IT Manager sees all tickets with full access -->
+    <record id="rule_it_ticket_it_manager" model="ir.rule">
+        <field name="name">IT Manager: Full Access</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_it_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="True"/>
     </record>
 </odoo>
