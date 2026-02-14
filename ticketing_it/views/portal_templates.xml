@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- CRITICAL: This template MUST inherit portal.portal_my_home -->
+    <!-- Add IT Tickets to Portal Homepage -->
     <template id="portal_my_home_it_tickets"
-              name="Portal: IT Tickets Entry"
+              name="Portal My Home: IT Tickets Entry"
               inherit_id="portal.portal_my_home"
-              customize_show="True"
               priority="40">
-
-        <!-- Insert IT Tickets card into portal homepage -->
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-call="portal.portal_docs_entry">
                 <t t-set="title">IT Tickets</t>
@@ -18,11 +15,11 @@
         </xpath>
     </template>
 
-    <!-- Rest of your templates below... -->
-
+    <!-- Ticket List Page -->
     <template id="portal_my_tickets" name="My IT Tickets">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
             <t t-call="portal.portal_searchbar">
                 <t t-set="title">IT Tickets</t>
             </t>
@@ -102,6 +99,7 @@
         </t>
     </template>
 
+    <!-- Create Ticket Form -->
     <template id="portal_create_ticket_form" name="Create IT Ticket">
         <t t-call="portal.portal_layout">
             <div class="container mt-3">
@@ -160,6 +158,7 @@
         </t>
     </template>
 
+    <!-- Ticket Detail Page -->
     <template id="portal_ticket_detail" name="Ticket Detail">
         <t t-call="portal.portal_layout">
             <div class="container mt-3">
@@ -230,6 +229,7 @@
         </t>
     </template>
 
+    <!-- No Employee Error -->
     <template id="portal_no_employee" name="No Employee">
         <t t-call="portal.portal_layout">
             <div class="container mt-5">
