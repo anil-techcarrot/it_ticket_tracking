@@ -10,15 +10,18 @@ class PortalITTicket(CustomerPortal):
     def _prepare_home_portal_values(self, counters):
         """Add ticket count to portal homepage"""
         values = super()._prepare_home_portal_values(counters)
-        if 'ticket_count' in counters:
-            employee = request.env['hr.employee'].sudo().search([
-                ('user_id', '=', request.env.user.id)
-            ], limit=1)
-            if employee:
-                ticket_count = request.env['it.ticket'].search_count([
-                    ('employee_id', '=', employee.id)
-                ])
-                values['ticket_count'] = ticket_count
+
+        # Always prepare ticket count for portal users
+        employee = request.env['hr.employee'].sudo().search([
+            ('user_id', '=', request.env.user.id)
+        ], limit=1)
+
+        if employee:
+            ticket_count = request.env['it.ticket'].search_count([
+                ('employee_id', '=', employee.id)
+            ])
+            values['ticket_count'] = ticket_count
+
         return values
 
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth="user", website=True)
