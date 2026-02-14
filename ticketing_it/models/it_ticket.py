@@ -141,13 +141,15 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
+        """FIXED: Changed from .users to .user_ids for Odoo 19"""
         for rec in self:
             it_manager_group = self.env.ref(
                 'ticketing_it.group_it_manager',
                 raise_if_not_found=False
             )
-            if it_manager_group and it_manager_group.users:
-                rec.it_manager_id = it_manager_group.users[0]
+            # FIX: Changed 'users' to 'user_ids' for Odoo 19 compatibility
+            if it_manager_group and it_manager_group.user_ids:
+                rec.it_manager_id = it_manager_group.user_ids[0]
             else:
                 rec.it_manager_id = False
 
