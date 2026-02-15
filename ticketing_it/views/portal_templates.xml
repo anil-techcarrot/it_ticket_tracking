@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Add IT Tickets to Portal Homepage -->
+    <!-- Add IT Tickets to Portal Homepage - Direct Method -->
     <template id="portal_my_home_it_tickets"
               name="Portal My Home: IT Tickets Entry"
               inherit_id="portal.portal_my_home"
               priority="40">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-call="portal.portal_docs_entry">
-                <t t-set="title">IT Tickets</t>
-                <t t-set="url" t-value="'/my/tickets'"/>
-                <t t-set="placeholder_count" t-value="'ticket_count'"/>
+        <xpath expr="//div[@class='o_portal_my_details']" position="before">
+            <t t-set="employee" t-value="request.env['hr.employee'].sudo().search([('user_id', '=', request.env.user.id)], limit=1)"/>
+            <t t-if="employee">
+                <div class="col-lg-6">
+                    <a href="/my/tickets" class="o_portal_docs o_open_menu">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-2 d-flex align-items-center">
+                                        <i class="fa fa-ticket fa-3x text-primary"/>
+                                    </div>
+                                    <div class="col-10">
+                                        <h4>IT Tickets</h4>
+                                        <p class="text-muted mb-0">
+                                            <t t-esc="request.env['it.ticket'].search_count([('employee_id', '=', employee.id)])"/>
+                                            Ticket(s)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </t>
         </xpath>
     </template>
