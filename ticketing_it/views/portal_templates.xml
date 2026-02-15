@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Add IT Tickets to Portal Homepage -->
+    <!-- Add IT Tickets to Portal Homepage - SIMPLE VERSION -->
     <template id="portal_my_home_it_tickets"
               name="Portal My Home: IT Tickets Entry"
               inherit_id="portal.portal_my_home"
               priority="40">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-set="employee" t-value="request.env['hr.employee'].sudo().search([('user_id', '=', request.env.user.id)], limit=1)"/>
-            <t t-if="employee">
-                <t t-set="ticket_count" t-value="request.env['it.ticket'].search_count([('employee_id', '=', employee.id)])"/>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="icon">fa-ticket</t>
-                    <t t-set="title">IT Tickets</t>
-                    <t t-set="url" t-value="'/my/tickets'"/>
-                    <t t-set="count" t-value="ticket_count"/>
-                </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon">fa-ticket</t>
+                <t t-set="title">IT Tickets</t>
+                <t t-set="url" t-value="'/my/tickets'"/>
+                <t t-set="placeholder_count" t-value="'ticket_count'"/>
             </t>
         </xpath>
     </template>
 
-    <!-- Rest of templates remain the same -->
+    <!-- Ticket List Page -->
     <template id="portal_my_tickets" name="My IT Tickets">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
