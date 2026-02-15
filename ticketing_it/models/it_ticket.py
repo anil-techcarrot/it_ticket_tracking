@@ -165,7 +165,7 @@ class ITTicket(models.Model):
                 'ticketing_it.group_it_manager',
                 raise_if_not_found=False
             )
-            if it_manager_group and it_manager_group.users:
+            if it_manager_group and it_manager_group.user_ids:
                 rec.it_manager_id = it_manager_group.users[0]
             else:
                 rec.it_manager_id = False
