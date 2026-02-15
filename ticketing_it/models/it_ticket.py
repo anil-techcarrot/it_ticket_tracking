@@ -9,6 +9,7 @@ class ITTicket(models.Model):
     _description = 'IT Support Ticket'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin']
     _order = 'create_date desc'
+    _rec_name = 'name'
 
     # ======================
     # BASIC FIELDS
@@ -120,6 +121,19 @@ class ITTicket(models.Model):
     rejected_date = fields.Datetime(readonly=True, string='Rejection Date')
 
     # =========================================================
+    # DISPLAY NAME
+    # =========================================================
+
+    def _compute_display_name(self):
+        """Odoo 19 uses _compute_display_name instead of name_get"""
+        for record in self:
+            name = record.name or 'New'
+            if record.subject:
+                record.display_name = f"{name} - {record.subject}"
+            else:
+                record.display_name = name
+
+    # =========================================================
     # DEFAULT EMPLOYEE
     # =========================================================
 
@@ -151,8 +165,8 @@ class ITTicket(models.Model):
                 'ticketing_it.group_it_manager',
                 raise_if_not_found=False
             )
-            if it_manager_group and it_manager_group.user_ids:
-                rec.it_manager_id = it_manager_group.user_ids[0]
+            if it_manager_group and it_manager_group.users:
+                rec.it_manager_id = it_manager_group.users[0]
             else:
                 rec.it_manager_id = False
 
