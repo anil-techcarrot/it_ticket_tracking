@@ -35,9 +35,17 @@ class PortalITTicket(CustomerPortal):
     def _prepare_portal_layout_values(self):
         """Ensure ticket_count is always in counters"""
         values = super()._prepare_portal_layout_values()
-        values['counters'].update({
-            'ticket_count': True,
-        })
+
+        # Check if counters exists before updating
+        if 'counters' in values:
+            values['counters'].update({
+                'ticket_count': True,
+            })
+        else:
+            values['counters'] = {
+                'ticket_count': True,
+            }
+
         return values
 
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth="user", website=True)
