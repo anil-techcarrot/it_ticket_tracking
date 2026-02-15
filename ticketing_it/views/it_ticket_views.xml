@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- TREE VIEW (Odoo 19 uses 'tree' tag, not 'list') -->
+    <!-- LIST VIEW (Odoo 19 uses 'list' view type, not 'tree') -->
     <record id="view_it_ticket_tree" model="ir.ui.view">
         <field name="name">it.ticket.tree</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <tree string="IT Tickets" default_order="create_date desc" open_form_view="1">
+            <list string="IT Tickets" default_order="create_date desc">
                 <field name="name" string="Ticket #"/>
                 <field name="employee_id"/>
                 <field name="ticket_type"/>
@@ -16,7 +16,7 @@
                        decoration-danger="state=='rejected'"
                        decoration-warning="state in ['manager_approval','it_approval']"/>
                 <field name="create_date"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -147,11 +147,11 @@
         </field>
     </record>
 
-    <!-- ACTIONS -->
+    <!-- ACTIONS (Changed view_mode from 'tree' to 'list') -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form,activity</field>
+        <field name="view_mode">list,form,activity</field>
         <field name="search_view_id" ref="view_it_ticket_search"/>
         <field name="context">{}</field>
         <field name="help" type="html">
@@ -167,7 +167,7 @@
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form,activity</field>
+        <field name="view_mode">list,form,activity</field>
         <field name="search_view_id" ref="view_it_ticket_search"/>
         <field name="domain">[('state','=','manager_approval')]</field>
         <field name="context">{'search_default_pending_approval': 1}</field>
@@ -181,7 +181,7 @@
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
-        <field name="view_mode">tree,form,activity</field>
+        <field name="view_mode">list,form,activity</field>
         <field name="search_view_id" ref="view_it_ticket_search"/>
         <field name="domain">[('state','=','it_approval')]</field>
         <field name="context">{'search_default_pending_approval': 1}</field>
