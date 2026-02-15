@@ -3,14 +3,46 @@
 from odoo import http
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class PortalITTicket(CustomerPortal):
 
+    def _prepare_home_portal_values(self, counters):
+        """Add ticket count to portal homepage"""
+        values = super()._prepare_home_portal_values(counters)
+
+        try:
+            if 'ticket_count' in counters:
+                employee = request.env['hr.employee'].sudo().search([
+                    ('user_id', '=', request.env.user.id)
+                ], limit=1)
+
+                if employee:
+                    values['ticket_count'] = request.env['it.ticket'].search_count([
+                        ('employee_id', '=', employee.id)
+                    ])
+                else:
+                    values['ticket_count'] = 0
+        except Exception as e:
+            _logger.error(f"Error fetching ticket count: {e}")
+            values['ticket_count'] = 0
+
+        return values
+
+    def _prepare_portal_layout_values(self):
+        """Ensure ticket_count is always in counters"""
+        values = super()._prepare_portal_layout_values()
+        values['counters'].update({
+            'ticket_count': True,
+        })
+        return values
+
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_tickets(self, page=1, sortby=None, **kw):
         """List all tickets for current portal user"""
-        # Get current employee
         employee = request.env['hr.employee'].sudo().search([
             ('user_id', '=', request.env.user.id)
         ], limit=1)
@@ -18,11 +50,9 @@ class PortalITTicket(CustomerPortal):
         if not employee:
             return request.render("ticketing_it.portal_no_employee")
 
-        # Search tickets
         domain = [('employee_id', '=', employee.id)]
         ticket_count = request.env['it.ticket'].search_count(domain)
 
-        # Pager
         pager = portal_pager(
             url="/my/tickets",
             total=ticket_count,
@@ -30,7 +60,6 @@ class PortalITTicket(CustomerPortal):
             step=10
         )
 
-        # Get tickets
         tickets = request.env['it.ticket'].search(
             domain,
             limit=10,
@@ -52,7 +81,6 @@ class PortalITTicket(CustomerPortal):
         """View ticket details"""
         ticket = request.env['it.ticket'].browse(ticket_id)
 
-        # Check access
         employee = request.env['hr.employee'].sudo().search([
             ('user_id', '=', request.env.user.id)
         ], limit=1)
@@ -94,7 +122,6 @@ class PortalITTicket(CustomerPortal):
         if not employee:
             return request.redirect('/my')
 
-        # Create ticket
         ticket = request.env['it.ticket'].sudo().create({
             'employee_id': employee.id,
             'ticket_type': post.get('ticket_type'),
@@ -103,7 +130,5 @@ class PortalITTicket(CustomerPortal):
             'description': post.get('description'),
             'required_date': post.get('required_date') if post.get('required_date') else False,
         })
-
-        # Ticket will auto-submit via create method
 
         return request.redirect('/my/tickets/%s' % ticket.id)
