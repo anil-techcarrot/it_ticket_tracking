@@ -1,47 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Add IT Tickets to Portal Homepage - Direct Method -->
+    <!-- Add IT Tickets to Portal Homepage -->
     <template id="portal_my_home_it_tickets"
               name="Portal My Home: IT Tickets Entry"
               inherit_id="portal.portal_my_home"
               priority="40">
-        <xpath expr="//div[@class='o_portal_my_details']" position="before">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-set="employee" t-value="request.env['hr.employee'].sudo().search([('user_id', '=', request.env.user.id)], limit=1)"/>
             <t t-if="employee">
-                <div class="col-lg-6">
-                    <a href="/my/tickets" class="o_portal_docs o_open_menu">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-2 d-flex align-items-center">
-                                        <i class="fa fa-ticket fa-3x text-primary"/>
-                                    </div>
-                                    <div class="col-10">
-                                        <h4>IT Tickets</h4>
-                                        <p class="text-muted mb-0">
-                                            <t t-esc="request.env['it.ticket'].search_count([('employee_id', '=', employee.id)])"/>
-                                            Ticket(s)
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                <t t-set="ticket_count" t-value="request.env['it.ticket'].search_count([('employee_id', '=', employee.id)])"/>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon">fa-ticket</t>
+                    <t t-set="title">IT Tickets</t>
+                    <t t-set="url" t-value="'/my/tickets'"/>
+                    <t t-set="count" t-value="ticket_count"/>
+                </t>
             </t>
         </xpath>
     </template>
 
-    <!-- Ticket List Page -->
+    <!-- Rest of templates remain the same -->
     <template id="portal_my_tickets" name="My IT Tickets">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
-
             <t t-call="portal.portal_searchbar">
                 <t t-set="title">IT Tickets</t>
             </t>
-
             <div class="container mt-3">
                 <div class="row">
                     <div class="col-12">
@@ -50,13 +35,11 @@
                         </a>
                     </div>
                 </div>
-
                 <t t-if="not tickets">
                     <div class="alert alert-info">
                         No tickets found. Create your first ticket!
                     </div>
                 </t>
-
                 <t t-if="tickets">
                     <table class="table table-striped">
                         <thead>
@@ -108,7 +91,6 @@
                             </t>
                         </tbody>
                     </table>
-
                     <div t-if="pager" class="o_portal_pager text-center">
                         <t t-call="portal.pager"/>
                     </div>
@@ -117,15 +99,12 @@
         </t>
     </template>
 
-    <!-- Create Ticket Form -->
     <template id="portal_create_ticket_form" name="Create IT Ticket">
         <t t-call="portal.portal_layout">
             <div class="container mt-3">
                 <h2>Create New IT Ticket</h2>
-
                 <form action="/my/tickets/submit" method="POST" class="mt-4">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-
                     <div class="form-group">
                         <label for="ticket_type">Ticket Type *</label>
                         <select name="ticket_type" class="form-control" required="required">
@@ -137,7 +116,6 @@
                             <option value="other">Other</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="priority">Priority *</label>
                         <select name="priority" class="form-control" required="required">
@@ -147,24 +125,20 @@
                             <option value="0">Low</option>
                         </select>
                     </div>
-
                     <div class="form-group">
                         <label for="subject">Subject *</label>
                         <input type="text" name="subject" class="form-control" required="required"
                                placeholder="Brief description of the issue"/>
                     </div>
-
                     <div class="form-group">
                         <label for="description">Description *</label>
                         <textarea name="description" class="form-control" rows="5" required="required"
                                   placeholder="Detailed description of the issue"></textarea>
                     </div>
-
                     <div class="form-group">
                         <label for="required_date">Required By Date (Optional)</label>
                         <input type="date" name="required_date" class="form-control"/>
                     </div>
-
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">
                             <i class="fa fa-paper-plane"/> Submit Ticket
@@ -176,7 +150,6 @@
         </t>
     </template>
 
-    <!-- Ticket Detail Page -->
     <template id="portal_ticket_detail" name="Ticket Detail">
         <t t-call="portal.portal_layout">
             <div class="container mt-3">
@@ -187,7 +160,6 @@
                         </a>
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-header">
                         <h3><t t-esc="ticket.name"/> - <t t-esc="ticket.subject"/></h3>
@@ -227,12 +199,9 @@
                                 <p t-if="ticket.line_manager_id"><strong>Line Manager:</strong> <t t-esc="ticket.line_manager_id.name"/></p>
                             </div>
                         </div>
-
                         <hr/>
-
                         <h5>Description:</h5>
                         <div t-field="ticket.description"/>
-
                         <t t-if="ticket.state == 'rejected'">
                             <hr/>
                             <div class="alert alert-danger">
@@ -247,7 +216,6 @@
         </t>
     </template>
 
-    <!-- No Employee Error -->
     <template id="portal_no_employee" name="No Employee">
         <t t-call="portal.portal_layout">
             <div class="container mt-5">
