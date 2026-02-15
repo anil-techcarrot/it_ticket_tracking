@@ -10,43 +10,22 @@ _logger = logging.getLogger(__name__)
 
 class PortalITTicket(CustomerPortal):
 
-    def _prepare_home_portal_values(self, counters):
-        """Add ticket count to portal homepage"""
-        values = super()._prepare_home_portal_values(counters)
+    @http.route('/my', type='http', auth="user", website=True)
+    def home(self, **kw):
+        """Redirect portal users directly to tickets page"""
+        # Check if user is portal user (not internal user)
+        if request.env.user.has_group('base.group_portal'):
+            # Get employee
+            employee = request.env['hr.employee'].sudo().search([
+                ('user_id', '=', request.env.user.id)
+            ], limit=1)
 
-        try:
-            if 'ticket_count' in counters:
-                employee = request.env['hr.employee'].sudo().search([
-                    ('user_id', '=', request.env.user.id)
-                ], limit=1)
+            if employee:
+                # Redirect portal users to tickets page
+                return request.redirect('/my/tickets')
 
-                if employee:
-                    values['ticket_count'] = request.env['it.ticket'].search_count([
-                        ('employee_id', '=', employee.id)
-                    ])
-                else:
-                    values['ticket_count'] = 0
-        except Exception as e:
-            _logger.error(f"Error fetching ticket count: {e}")
-            values['ticket_count'] = 0
-
-        return values
-
-    def _prepare_portal_layout_values(self):
-        """Ensure ticket_count is always in counters"""
-        values = super()._prepare_portal_layout_values()
-
-        # Check if counters exists before updating
-        if 'counters' in values:
-            values['counters'].update({
-                'ticket_count': True,
-            })
-        else:
-            values['counters'] = {
-                'ticket_count': True,
-            }
-
-        return values
+        # For internal users or users without employee, show normal portal
+        return super(PortalITTicket, self).home(**kw)
 
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_tickets(self, page=1, sortby=None, **kw):
