@@ -166,7 +166,7 @@ class ITTicket(models.Model):
                 raise_if_not_found=False
             )
             if it_manager_group and it_manager_group.user_ids:
-                rec.it_manager_id = it_manager_group.users[0]
+                rec.it_manager_id = it_manager_group.user_ids[0]
             else:
                 rec.it_manager_id = False
 
