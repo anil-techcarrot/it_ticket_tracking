@@ -3,6 +3,7 @@
 from odoo import http
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
+from odoo.exceptions import AccessError, MissingError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -10,22 +11,25 @@ _logger = logging.getLogger(__name__)
 
 class PortalITTicket(CustomerPortal):
 
-    @http.route('/my', type='http', auth="user", website=True)
-    def home(self, **kw):
-        """Redirect portal users directly to tickets page"""
-        # Check if user is portal user (not internal user)
-        if request.env.user.has_group('base.group_portal'):
-            # Get employee
-            employee = request.env['hr.employee'].sudo().search([
-                ('user_id', '=', request.env.user.id)
-            ], limit=1)
+    def _prepare_home_portal_values(self, counters):
+        """Add ticket count to portal homepage"""
+        values = super()._prepare_home_portal_values(counters)
 
-            if employee:
-                # Redirect portal users to tickets page
-                return request.redirect('/my/tickets')
+        # Get employee
+        employee = request.env['hr.employee'].sudo().search([
+            ('user_id', '=', request.env.user.id)
+        ], limit=1)
 
-        # For internal users or users without employee, show normal portal
-        return super(PortalITTicket, self).home(**kw)
+        # IMPORTANT: Always set ticket_count to prevent spinner
+        if employee:
+            ticket_count = request.env['it.ticket'].search_count([
+                ('employee_id', '=', employee.id)
+            ])
+            values['ticket_count'] = ticket_count
+        else:
+            values['ticket_count'] = 0
+
+        return values
 
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_tickets(self, page=1, sortby=None, **kw):
@@ -66,21 +70,24 @@ class PortalITTicket(CustomerPortal):
     @http.route(['/my/tickets/<int:ticket_id>'], type='http', auth="user", website=True)
     def portal_ticket_detail(self, ticket_id, **kw):
         """View ticket details"""
-        ticket = request.env['it.ticket'].browse(ticket_id)
+        try:
+            ticket = request.env['it.ticket'].browse(ticket_id)
 
-        employee = request.env['hr.employee'].sudo().search([
-            ('user_id', '=', request.env.user.id)
-        ], limit=1)
+            employee = request.env['hr.employee'].sudo().search([
+                ('user_id', '=', request.env.user.id)
+            ], limit=1)
 
-        if not employee or ticket.employee_id != employee:
-            return request.render("website.403")
+            if not employee or ticket.employee_id != employee:
+                return request.render("website.403")
 
-        values = {
-            'ticket': ticket,
-            'page_name': 'ticket',
-        }
+            values = {
+                'ticket': ticket,
+                'page_name': 'ticket',
+            }
 
-        return request.render("ticketing_it.portal_ticket_detail", values)
+            return request.render("ticketing_it.portal_ticket_detail", values)
+        except (AccessError, MissingError):
+            return request.redirect('/my')
 
     @http.route(['/my/tickets/new'], type='http', auth="user", website=True)
     def portal_create_ticket(self, **kw):
@@ -95,6 +102,7 @@ class PortalITTicket(CustomerPortal):
         values = {
             'employee': employee,
             'page_name': 'ticket',
+            'error': kw.get('error'),
         }
 
         return request.render("ticketing_it.portal_create_ticket_form", values)
@@ -109,13 +117,22 @@ class PortalITTicket(CustomerPortal):
         if not employee:
             return request.redirect('/my')
 
-        ticket = request.env['it.ticket'].sudo().create({
-            'employee_id': employee.id,
-            'ticket_type': post.get('ticket_type'),
-            'priority': post.get('priority', '1'),
-            'subject': post.get('subject'),
-            'description': post.get('description'),
-            'required_date': post.get('required_date') if post.get('required_date') else False,
-        })
+        try:
+            # Create ticket
+            ticket = request.env['it.ticket'].sudo().create({
+                'employee_id': employee.id,
+                'ticket_type': post.get('ticket_type'),
+                'priority': post.get('priority', '1'),
+                'subject': post.get('subject'),
+                'description': post.get('description'),
+                'required_date': post.get('required_date') if post.get('required_date') else False,
+            })
 
-        return request.redirect('/my/tickets/%s' % ticket.id)
+            # Success - redirect to ticket detail
+            return request.redirect('/my/tickets/%s' % ticket.id)
+
+        except Exception as e:
+            # Log error and redirect with error message
+            _logger.error("Error creating ticket: %s", str(e))
+            request.env.cr.rollback()
+            return request.redirect('/my/tickets/new?error=1')
