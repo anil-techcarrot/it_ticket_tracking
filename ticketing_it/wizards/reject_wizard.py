@@ -11,5 +11,9 @@ class ITTicketRejectWizard(models.TransientModel):
     rejection_reason = fields.Text('Rejection Reason', required=True)
 
     def action_reject(self):
-        self.ticket_id.do_reject(self.rejection_reason)
+        # FIX: use sudo() so the wizard can call do_reject() even when the
+        # calling user (e.g. line manager) only has limited ACL rights on
+        # it.ticket.  Security is enforced inside do_reject() via
+        # _check_reject_access(), so sudo() here does not bypass any checks.
+        self.ticket_id.sudo().do_reject(self.rejection_reason)
         return {'type': 'ir.actions.act_window_close'}

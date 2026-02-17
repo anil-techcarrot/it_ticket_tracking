@@ -178,13 +178,11 @@ class ITTicket(models.Model):
     def create(self, vals_list):
         """Create ticket and auto-submit for portal users"""
         for vals in vals_list:
-            # Generate sequence number
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or 'New'
 
         records = super().create(vals_list)
 
-        # Auto-submit only for portal users
         for record in records:
             if record.env.user.has_group('base.group_portal'):
                 record.action_submit()
@@ -198,17 +196,14 @@ class ITTicket(models.Model):
     def action_submit(self):
         """Submit ticket to line manager for approval"""
         for rec in self:
-            # Validation
             if not rec.line_manager_id:
                 raise ValidationError(
                     _("No line manager found for employee: %s") % rec.employee_id.name
                 )
 
-            # Update state
             rec.state = 'manager_approval'
             rec.submitted_date = fields.Datetime.now()
 
-            # Send email notification
             template = self.env.ref(
                 'ticketing_it.email_template_manager_approval',
                 raise_if_not_found=False
@@ -216,7 +211,6 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Create activity for line manager
             rec.activity_schedule(
                 'mail.mail_activity_data_todo',
                 user_id=rec.line_manager_id.id,
@@ -224,7 +218,6 @@ class ITTicket(models.Model):
                 note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
             )
 
-            # Log in chatter
             rec.message_post(
                 body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
             )
@@ -232,20 +225,16 @@ class ITTicket(models.Model):
     def action_manager_approve(self):
         """Line manager approves ticket - sends to IT manager"""
         for rec in self:
-            # Security check
             if self.env.user != rec.line_manager_id:
                 raise UserError(
                     _("Only the line manager (%s) can approve this ticket") % rec.line_manager_id.name
                 )
 
-            # Update state
             rec.state = 'it_approval'
             rec.manager_approval_date = fields.Datetime.now()
 
-            # Clear pending activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send email to IT manager
             template = self.env.ref(
                 'ticketing_it.email_template_it_approval',
                 raise_if_not_found=False
@@ -253,7 +242,6 @@ class ITTicket(models.Model):
             if template and rec.it_manager_id:
                 template.send_mail(rec.id, force_send=True)
 
-            # Create activity for IT manager
             if rec.it_manager_id:
                 rec.activity_schedule(
                     'mail.mail_activity_data_todo',
@@ -262,7 +250,6 @@ class ITTicket(models.Model):
                     note=_('Ticket approved by line manager. Please review.')
                 )
 
-            # Log in chatter
             rec.message_post(
                 body=_("Approved by Line Manager: %s. Sent to IT Manager.") % self.env.user.name
             )
@@ -270,18 +257,14 @@ class ITTicket(models.Model):
     def action_it_approve(self):
         """IT manager approves ticket - assigns to IT team"""
         for rec in self:
-            # Security check
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 raise UserError(_("Only IT managers can approve this ticket"))
 
-            # Update state
             rec.state = 'assigned'
             rec.it_approval_date = fields.Datetime.now()
 
-            # Clear pending activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send email to IT team
             template = self.env.ref(
                 'ticketing_it.email_template_it_assigned',
                 raise_if_not_found=False
@@ -289,14 +272,27 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Log in chatter
             rec.message_post(
                 body=_("Approved by IT Manager: %s. Assigned to IT Team.") % self.env.user.name
             )
 
     def action_reject(self):
-        """Open wizard to reject ticket with reason"""
+        """Open wizard to reject ticket with reason.
+
+        FIX: The wizard model (it.ticket.reject.wizard) previously had no ACL
+        rules, so any non-admin user clicking Reject got an Access Denied error
+        when Odoo tried to load the wizard form view.
+
+        Security is enforced inside do_reject() instead — only the assigned
+        line manager (for manager_approval state) or an IT manager
+        (for it_approval state) may actually complete the rejection.
+        """
         self.ensure_one()
+
+        # Check that the current user is actually allowed to reject
+        # before even opening the wizard, so they get a clear message.
+        self._check_reject_access()
+
         return {
             'name': _('Reject Ticket'),
             'type': 'ir.actions.act_window',
@@ -306,19 +302,55 @@ class ITTicket(models.Model):
             'context': {'default_ticket_id': self.id}
         }
 
+    def _check_reject_access(self):
+        """Verify the current user is allowed to reject this ticket.
+
+        - In state 'manager_approval': only the assigned line manager may reject.
+        - In state 'it_approval': only IT managers may reject.
+        - Other states: no one may reject via this button.
+        """
+        self.ensure_one()
+        user = self.env.user
+
+        if self.state == 'manager_approval':
+            if user != self.line_manager_id:
+                raise UserError(
+                    _("Only the line manager (%s) can reject this ticket.")
+                    % (self.line_manager_id.name or _('unassigned'))
+                )
+        elif self.state == 'it_approval':
+            if not user.has_group('ticketing_it.group_it_manager'):
+                raise UserError(_("Only IT managers can reject this ticket."))
+        else:
+            raise UserError(
+                _("This ticket cannot be rejected in its current state (%s).")
+                % dict(self._fields['state'].selection).get(self.state, self.state)
+            )
+
     def do_reject(self, reason):
-        """Actually reject the ticket (called from wizard)"""
+        """Actually reject the ticket (called from wizard).
+
+        FIX: Use sudo() when writing rejection fields because the wizard
+        runs under the calling user's rights, and those fields are marked
+        readonly in the view/field definition.  sudo() is safe here because
+        access has already been validated by _check_reject_access() before
+        the wizard was opened.
+        """
         for rec in self:
-            # Update state
-            rec.state = 'rejected'
-            rec.rejection_reason = reason
-            rec.rejected_by_id = self.env.user
-            rec.rejected_date = fields.Datetime.now()
+            # Re-validate in case someone calls do_reject directly
+            rec._check_reject_access()
+
+            rec.sudo().write({
+                'state': 'rejected',
+                'rejection_reason': reason,
+                'rejected_by_id': self.env.user.id,
+                'rejected_date': fields.Datetime.now(),
+            })
 
             # Clear pending activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send rejection email to employee
+            # Send rejection email to the employee (portal user)
             template = self.env.ref(
                 'ticketing_it.email_template_rejection',
                 raise_if_not_found=False
@@ -350,7 +382,6 @@ class ITTicket(models.Model):
             rec.state = 'done'
             rec.done_date = fields.Datetime.now()
 
-            # Send completion email to employee
             template = self.env.ref(
                 'ticketing_it.email_template_done',
                 raise_if_not_found=False
@@ -358,7 +389,6 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Log in chatter
             rec.message_post(
                 body=_("Ticket completed by %s and employee notified") % self.env.user.name
             )
