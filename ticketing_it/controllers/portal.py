@@ -15,12 +15,10 @@ class PortalITTicket(CustomerPortal):
         """Add ticket count to portal homepage"""
         values = super()._prepare_home_portal_values(counters)
 
-        # Get employee
         employee = request.env['hr.employee'].sudo().search([
             ('user_id', '=', request.env.user.id)
         ], limit=1)
 
-        # IMPORTANT: Always set ticket_count to prevent spinner
         if employee:
             ticket_count = request.env['it.ticket'].search_count([
                 ('employee_id', '=', employee.id)
@@ -99,8 +97,16 @@ class PortalITTicket(CustomerPortal):
         if not employee:
             return request.render("ticketing_it.portal_no_employee")
 
+        # FIX: Resolve line manager from employee's parent record
+        # employee.parent_id is the manager's hr.employee record;
+        # employee.parent_id.user_id is that manager's res.users record.
+        line_manager = None
+        if employee.parent_id and employee.parent_id.user_id:
+            line_manager = employee.parent_id.user_id
+
         values = {
             'employee': employee,
+            'line_manager': line_manager,   # <-- passed to template
             'page_name': 'ticket',
             'error': kw.get('error'),
         }
@@ -118,7 +124,6 @@ class PortalITTicket(CustomerPortal):
             return request.redirect('/my')
 
         try:
-            # Create ticket
             ticket = request.env['it.ticket'].sudo().create({
                 'employee_id': employee.id,
                 'ticket_type': post.get('ticket_type'),
@@ -128,11 +133,9 @@ class PortalITTicket(CustomerPortal):
                 'required_date': post.get('required_date') if post.get('required_date') else False,
             })
 
-            # Success - redirect to ticket detail
             return request.redirect('/my/tickets/%s' % ticket.id)
 
         except Exception as e:
-            # Log error and redirect with error message
             _logger.error("Error creating ticket: %s", str(e))
             request.env.cr.rollback()
             return request.redirect('/my/tickets/new?error=1')

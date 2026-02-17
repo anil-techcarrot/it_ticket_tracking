@@ -119,7 +119,29 @@
                     </div>
                 </t>
 
-                <form action="/my/tickets/submit" method="POST" class="mt-4">
+                <!-- FIX: Line Manager info card shown before the form -->
+                <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                    <i class="fa fa-user-circle fa-2x me-3 mr-3 text-primary"/>
+                    <div>
+                        <strong>Your Line Manager:</strong>
+                        <t t-if="line_manager">
+                            <span class="ms-2 ml-2 fw-bold">
+                                <t t-esc="line_manager.name"/>
+                            </span>
+                            <small class="text-muted ms-2 ml-2">
+                                — This ticket will be sent to your line manager for approval first.
+                            </small>
+                        </t>
+                        <t t-else="">
+                            <span class="ms-2 ml-2 text-warning">
+                                <i class="fa fa-exclamation-triangle"/> No line manager assigned.
+                                Please contact your administrator before submitting a ticket.
+                            </span>
+                        </t>
+                    </div>
+                </div>
+
+                <form action="/my/tickets/submit" method="POST" class="mt-2">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
                     <div class="form-group">
@@ -162,9 +184,18 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-paper-plane"/> Submit Ticket
-                        </button>
+                        <!-- Disable submit if no line manager so the ticket won't get stuck -->
+                        <t t-if="line_manager">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-paper-plane"/> Submit Ticket
+                            </button>
+                        </t>
+                        <t t-else="">
+                            <button type="submit" class="btn btn-primary" disabled="disabled"
+                                    title="Cannot submit: no line manager assigned">
+                                <i class="fa fa-paper-plane"/> Submit Ticket
+                            </button>
+                        </t>
                         <a href="/my/tickets" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
@@ -219,7 +250,10 @@
                             <div class="col-md-6">
                                 <p><strong>Created:</strong> <t t-esc="ticket.create_date.strftime('%Y-%m-%d %H:%M')"/></p>
                                 <p t-if="ticket.required_date"><strong>Required By:</strong> <t t-esc="ticket.required_date"/></p>
-                                <p t-if="ticket.line_manager_id"><strong>Line Manager:</strong> <t t-esc="ticket.line_manager_id.name"/></p>
+                                <p t-if="ticket.line_manager_id">
+                                    <strong>Line Manager:</strong>
+                                    <t t-esc="ticket.line_manager_id.name"/>
+                                </p>
                             </div>
                         </div>
                         <hr/>
