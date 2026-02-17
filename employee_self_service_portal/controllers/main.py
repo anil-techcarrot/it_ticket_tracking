@@ -906,17 +906,29 @@ class PortalEmployee(http.Controller):
             }
             return request.render('employee_self_service_portal.portal_ess_ticket_form', values)
 
+        @http.route('/my/ess/tickets/new', type='http', auth='user', website=True)
+        def portal_ess_ticket_new(self, **kw):
+            """Show create ticket form from ESS dashboard"""
+            employee = self._get_employee()
+            if not employee:
+                return request.redirect('/my/ess')
+            values = {
+                'employee': employee,
+                'page_name': 'ess_dashboard',
+                'error': kw.get('error'),
+                'error_msg': kw.get('error_msg', ''),
+            }
+            return request.render(
+                'employee_self_service_portal.portal_ess_ticket_form', values
+            )
+
         @http.route('/my/ess/tickets/submit', type='http', auth='user', website=True, methods=['POST'], csrf=True)
         def portal_ess_ticket_submit(self, **post):
             """Submit new IT ticket from ESS dashboard"""
-            import logging
-            _logger = logging.getLogger(__name__)
-
             employee = self._get_employee()
             if not employee:
                 return request.redirect('/my/ess')
 
-            # Basic validation
             if not post.get('subject') or not post.get('ticket_type') or not post.get('description'):
                 return request.redirect('/my/ess/tickets/new?error=1&error_msg=Please+fill+all+required+fields')
 
@@ -927,16 +939,17 @@ class PortalEmployee(http.Controller):
                     'priority': post.get('priority', '1'),
                     'subject': post.get('subject'),
                     'description': post.get('description'),
-                    'required_date': post.get('required_date') if post.get('required_date') else False,
+                    'required_date': post.get('required_date') or False,
                 })
-                _logger.info("IT Ticket created from ESS portal: %s by employee %s", ticket.name, employee.name)
+                _logger.info("IT Ticket %s created from ESS portal by %s", ticket.name, employee.name)
                 return request.redirect('/my/ess?ticket_success=1')
 
             except Exception as e:
-                _logger.error("Error creating IT ticket from ESS portal: %s", str(e))
+                _logger.error("Error creating IT ticket from ESS portal: %s", e)
                 request.env.cr.rollback()
                 return request.redirect(
                     '/my/ess/tickets/new?error=1&error_msg=Failed+to+create+ticket.+Please+try+again.')
+
 
         # Keep the classic view accessible via /my/ess/classic
         return self._render_ess_dashboard('employee_self_service_portal.portal_ess_dashboard', **kwargs)
