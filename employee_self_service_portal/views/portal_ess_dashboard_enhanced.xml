@@ -16,7 +16,7 @@
                         </p>
 
 
-                        
+
 
                         <!-- Add after the welcome paragraph in the Header Section -->
                         <t t-if="request.params.get('ticket_success')">
@@ -118,36 +118,36 @@
 
 
                     <!-- IT Tickets Quick Stat - ADD in quickStatsRow -->
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="text-muted mb-1">IT Tickets</h6>
-                                        <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>
-                                        <small class="text-muted">
-                                            <t t-if="it_tickets_pending and it_tickets_pending > 0">
-                                                <span class="text-warning">
-                                                    <t t-esc="it_tickets_pending"/>
-                                                    pending
-                                                </span>
-                                            </t>
-                                            <t t-else="">All resolved</t>
-                                        </small>
-                                    </div>
-                                    <div class="text-danger">
-                                        <i class="fa fa-ticket fa-2x"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm w-100">
-                                        <i class="fa fa-plus"></i>
-                                        New Ticket
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!--                    <div class="col-lg-3 col-md-6 mb-3">-->
+<!--                        <div class="card border-0 shadow-sm h-100">-->
+<!--                            <div class="card-body">-->
+<!--                                <div class="d-flex justify-content-between align-items-center">-->
+<!--                                    <div>-->
+<!--                                        <h6 class="text-muted mb-1">IT Tickets</h6>-->
+<!--                                        <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>-->
+<!--                                        <small class="text-muted">-->
+<!--                                            <t t-if="it_tickets_pending and it_tickets_pending > 0">-->
+<!--                                                <span class="text-warning">-->
+<!--                                                    <t t-esc="it_tickets_pending"/>-->
+<!--                                                    pending-->
+<!--                                                </span>-->
+<!--                                            </t>-->
+<!--                                            <t t-else="">All resolved</t>-->
+<!--                                        </small>-->
+<!--                                    </div>-->
+<!--                                    <div class="text-danger">-->
+<!--                                        <i class="fa fa-ticket fa-2x"></i>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                <div class="mt-2">-->
+<!--                                    <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm w-100">-->
+<!--                                        <i class="fa fa-plus"></i>-->
+<!--                                        New Ticket-->
+<!--                                    </a>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
 
 
                     <!-- CRM Quick Stat -->
@@ -243,36 +243,36 @@
 
 
                 <!-- IT Tickets Card - Classic View -->
-                <div class="col-md-4 mb-4">
-                    <div class="card text-center h-100 shadow-sm">
-                        <div class="card-body">
-                            <i class="fa fa-ticket fa-2x mb-2 text-danger"></i>
-                            <h5 class="card-title">
-                                IT Support Tickets
-                                <t t-if="it_tickets_pending and it_tickets_pending > 0">
-                                    <span class="badge badge-danger ml-2" t-esc="it_tickets_pending"/>
-                                </t>
-                            </h5>
-                            <p class="card-text">Submit and track IT support requests.</p>
-                            <t t-if="it_tickets_count">
-                                <small class="text-muted d-block mb-3">
-                                    <t t-esc="it_tickets_count"/>
-                                    total tickets
-                                </small>
-                            </t>
-                            <div class="mt-2">
-                                <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm me-2">
-                                    <i class="fa fa-plus"></i>
-                                    New Ticket
-                                </a>
-                                <a href="/my/tickets" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fa fa-list"></i>
-                                    View All
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!--                <div class="col-md-4 mb-4">-->
+<!--                    <div class="card text-center h-100 shadow-sm">-->
+<!--                        <div class="card-body">-->
+<!--                            <i class="fa fa-ticket fa-2x mb-2 text-danger"></i>-->
+<!--                            <h5 class="card-title">-->
+<!--                                IT Support Tickets-->
+<!--                                <t t-if="it_tickets_pending and it_tickets_pending > 0">-->
+<!--                                    <span class="badge badge-danger ml-2" t-esc="it_tickets_pending"/>-->
+<!--                                </t>-->
+<!--                            </h5>-->
+<!--                            <p class="card-text">Submit and track IT support requests.</p>-->
+<!--                            <t t-if="it_tickets_count">-->
+<!--                                <small class="text-muted d-block mb-3">-->
+<!--                                    <t t-esc="it_tickets_count"/>-->
+<!--                                    total tickets-->
+<!--                                </small>-->
+<!--                            </t>-->
+<!--                            <div class="mt-2">-->
+<!--                                <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm me-2">-->
+<!--                                    <i class="fa fa-plus"></i>-->
+<!--                                    New Ticket-->
+<!--                                </a>-->
+<!--                                <a href="/my/tickets" class="btn btn-outline-secondary btn-sm">-->
+<!--                                    <i class="fa fa-list"></i>-->
+<!--                                    View All-->
+<!--                                </a>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
 
 
                 <!-- Main Content Row -->
