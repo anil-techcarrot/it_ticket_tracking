@@ -10,34 +10,67 @@
                             Dashboard
                         </h1>
                         <p class="text-muted mb-0">
-                            Welcome back, <strong t-esc="employee.name if employee else 'Employee'"/>! 
-                            Here's your overview for <span id="currentDate"></span>
+                            Welcome back,<strong t-esc="employee.name if employee else 'Employee'"/>!
+                            Here's your overview for
+                            <span id="currentDate"></span>
                         </p>
+
+
+                        
+
+                        <!-- Add after the welcome paragraph in the Header Section -->
+                        <t t-if="request.params.get('ticket_success')">
+                            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                                <i class="fa fa-check-circle me-2"></i>
+                                <strong>Ticket submitted successfully!</strong>
+                                Your IT support ticket has been created and sent to your line manager for approval.
+                                <a href="/my/tickets" class="alert-link ms-2">View your tickets →</a>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </t>
+
+
+
+
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="d-flex justify-content-end align-items-center gap-2">
                             <a href="/my/ess/classic" class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-arrow-left"></i> Classic View
+                                <i class="fa fa-arrow-left"></i>
+                                Classic View
                             </a>
                             <button class="btn btn-outline-secondary btn-sm" onclick="refreshDashboard()">
-                                <i class="fa fa-refresh"></i> Refresh
+                                <i class="fa fa-refresh"></i>
+                                Refresh
                             </button>
                             <div class="dropdown">
-                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" 
+                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button"
                                         data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa fa-cog"></i> Settings
+                                    <i class="fa fa-cog"></i>
+                                    Settings
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="toggleTheme()">
-                                        <i class="fa fa-moon-o"></i> Dark Mode
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="exportDashboard()">
-                                        <i class="fa fa-download"></i> Export Data
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"/></li>
-                                    <li><a class="dropdown-item" href="/my/employee">
-                                        <i class="fa fa-user"></i> Profile Settings
-                                    </a></li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="toggleTheme()">
+                                            <i class="fa fa-moon-o"></i>
+                                            Dark Mode
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="exportDashboard()">
+                                            <i class="fa fa-download"></i>
+                                            Export Data
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider"/>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/my/employee">
+                                            <i class="fa fa-user"></i>
+                                            Profile Settings
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -54,17 +87,19 @@
                                     <div>
                                         <h6 class="text-muted mb-1">Today's Status</h6>
                                         <t t-if="today_attendances and len(today_attendances) > 0">
-                                            <t t-set="latest_attendance" t-value="today_attendances[0]" />
+                                            <t t-set="latest_attendance" t-value="today_attendances[0]"/>
                                             <t t-if="latest_attendance.check_out">
                                                 <h4 class="text-success mb-0">Completed</h4>
                                                 <small class="text-muted">
-                                                    <t t-esc="'%.2f' % latest_attendance.worked_hours"/> hours
+                                                    <t t-esc="'%.2f' % latest_attendance.worked_hours"/>
+                                                    hours
                                                 </small>
                                             </t>
                                             <t t-else="">
                                                 <h4 class="text-warning mb-0">Active</h4>
                                                 <small class="text-muted">
-                                                    Since <t t-esc="format_datetime(latest_attendance.check_in)"/>
+                                                    Since
+                                                    <t t-esc="format_datetime(latest_attendance.check_in)"/>
                                                 </small>
                                             </t>
                                         </t>
@@ -81,6 +116,40 @@
                         </div>
                     </div>
 
+
+                    <!-- IT Tickets Quick Stat - ADD in quickStatsRow -->
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-muted mb-1">IT Tickets</h6>
+                                        <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>
+                                        <small class="text-muted">
+                                            <t t-if="it_tickets_pending and it_tickets_pending > 0">
+                                                <span class="text-warning">
+                                                    <t t-esc="it_tickets_pending"/>
+                                                    pending
+                                                </span>
+                                            </t>
+                                            <t t-else="">All resolved</t>
+                                        </small>
+                                    </div>
+                                    <div class="text-danger">
+                                        <i class="fa fa-ticket fa-2x"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm w-100">
+                                        <i class="fa fa-plus"></i>
+                                        New Ticket
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <!-- CRM Quick Stat -->
                     <t t-if="has_crm_access">
                         <div class="col-lg-3 col-md-6 mb-3">
@@ -92,7 +161,8 @@
                                             <h4 class="text-info mb-0" t-esc="crm_leads_count or 0"/>
                                             <small class="text-muted">
                                                 <t t-if="crm_leads_count and crm_leads_count > 0">
-                                                    <i class="fa fa-arrow-up text-success"></i> Manage now
+                                                    <i class="fa fa-arrow-up text-success"></i>
+                                                    Manage now
                                                 </t>
                                                 <t t-else="">
                                                     No active leads
@@ -118,14 +188,18 @@
                                             <h6 class="text-muted mb-1">This Month</h6>
                                             <t t-if="expense_stats">
                                                 <h4 class="text-warning mb-0">
-                                                    <t t-esc="employee.company_id.currency_id.symbol"/><t t-esc="'%.0f' % expense_stats['total_amount']"/>
+                                                    <t t-esc="employee.company_id.currency_id.symbol"/>
+                                                    <t t-esc="'%.0f' % expense_stats['total_amount']"/>
                                                 </h4>
                                                 <small class="text-muted">
-                                                    <t t-esc="expense_stats['total_count']"/> expenses
+                                                    <t t-esc="expense_stats['total_count']"/>
+                                                    expenses
                                                 </small>
                                             </t>
                                             <t t-else="">
-                                                <h4 class="text-secondary mb-0"><t t-esc="employee.company_id.currency_id.symbol"/>0</h4>
+                                                <h4 class="text-secondary mb-0"><t
+                                                        t-esc="employee.company_id.currency_id.symbol"/>0
+                                                </h4>
                                                 <small class="text-muted">No expenses</small>
                                             </t>
                                         </div>
@@ -149,7 +223,8 @@
                                             <h4 class="text-primary mb-0" t-esc="payslips_count or 0"/>
                                             <t t-if="latest_payslip">
                                                 <small class="text-muted">
-                                                    Latest: <t t-esc="latest_payslip.get_formatted_period()"/>
+                                                    Latest:
+                                                    <t t-esc="latest_payslip.get_formatted_period()"/>
                                                 </small>
                                             </t>
                                             <t t-else="">
@@ -166,6 +241,40 @@
                     </t>
                 </div>
 
+
+                <!-- IT Tickets Card - Classic View -->
+                <div class="col-md-4 mb-4">
+                    <div class="card text-center h-100 shadow-sm">
+                        <div class="card-body">
+                            <i class="fa fa-ticket fa-2x mb-2 text-danger"></i>
+                            <h5 class="card-title">
+                                IT Support Tickets
+                                <t t-if="it_tickets_pending and it_tickets_pending > 0">
+                                    <span class="badge badge-danger ml-2" t-esc="it_tickets_pending"/>
+                                </t>
+                            </h5>
+                            <p class="card-text">Submit and track IT support requests.</p>
+                            <t t-if="it_tickets_count">
+                                <small class="text-muted d-block mb-3">
+                                    <t t-esc="it_tickets_count"/>
+                                    total tickets
+                                </small>
+                            </t>
+                            <div class="mt-2">
+                                <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm me-2">
+                                    <i class="fa fa-plus"></i>
+                                    New Ticket
+                                </a>
+                                <a href="/my/tickets" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fa fa-list"></i>
+                                    View All
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
                 <!-- Main Content Row -->
                 <div class="row">
                     <!-- Left Column -->
@@ -180,92 +289,92 @@
                             </div>
                             <div class="card-body">
                                 <div class="row g-3"> -->
-                                    <!-- Attendance Quick Action -->
-                                    <!-- <div class="col-md-6">
-                                        <div class="quick-action-card p-3 border rounded">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="fa fa-clock-o text-primary mr-2"></i>
-                                                <h6 class="mb-0">Attendance</h6>
-                                            </div>
-                                            <t t-if="today_attendances and any(not a.check_out for a in today_attendances)"> -->
-                                                <!-- Currently checked in - at least one open attendance -->
-                                                <!-- <button class="btn btn-danger btn-sm w-100" onclick="quickCheckOut()">
-                                                    <i class="fa fa-sign-out"></i> Check Out Now
-                                                </button>
-                                                <small class="text-success d-block mt-1"> -->
-                                                    <!-- Safely find the most recent open attendance -->
-                                                    <!-- <t t-set="open_attendance" t-value="[a for a in today_attendances if not a.check_out][0] if any(not a.check_out for a in today_attendances) else None" />
-                                                    <t t-if="open_attendance">
-                                                        Active since <t t-esc="format_datetime(open_attendance.check_in)"/>
-                                                    </t>
-                                                    <t t-else="">
-                                                        Active session
-                                                    </t>
-                                                </small>
-                                            </t>
-                                            <t t-elif="today_attendances and len(today_attendances) > 0"> -->
-                                                <!-- All attendances are checked out, can check in again -->
-                                                <!-- <button class="btn btn-success btn-sm w-100" onclick="quickCheckIn()">
-                                                    <i class="fa fa-sign-in"></i> Check In Again
-                                                </button>
-                                                <small class="text-success d-block mt-1">
-                                                    Last session completed
-                                                </small>
-                                            </t>
-                                            <t t-else=""> -->
-                                                <!-- No attendance today -->
-                                                <!-- <button class="btn btn-success btn-sm w-100" onclick="quickCheckIn()">
-                                                    <i class="fa fa-sign-in"></i> Check In Now
-                                                </button>
-                                            </t>
-                                        </div>
-                                    </div> -->
-
-                                    <!-- CRM Quick Action -->
-                                    <!-- <t t-if="has_crm_access">
-                                        <div class="col-md-6">
-                                            <div class="quick-action-card p-3 border rounded">
-                                                <div class="d-flex align-items-center mb-2">
-                                                    <i class="fa fa-plus-circle text-success mr-2"></i>
-                                                    <h6 class="mb-0">New Lead</h6>
-                                                </div>
-                                                <a href="/my/employee/crm/create" class="btn btn-outline-success btn-sm w-100">
-                                                    <i class="fa fa-plus"></i> Create Lead
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </t> -->
-
-                                    <!-- Expense Quick Action -->
-                                    <!-- <t t-if="has_expenses_access">
-                                        <div class="col-md-6">
-                                            <div class="quick-action-card p-3 border rounded">
-                                                <div class="d-flex align-items-center mb-2">
-                                                    <i class="fa fa-receipt text-warning mr-2"></i>
-                                                    <h6 class="mb-0">Add Expense</h6>
-                                                </div>
-                                                <a href="/my/employee/expenses/create" class="btn btn-outline-warning btn-sm w-100">
-                                                    <i class="fa fa-plus"></i> Add Expense
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </t> -->
-
-                                    <!-- Profile Quick Action -->
-                                    <!-- <div class="col-md-6">
-                                        <div class="quick-action-card p-3 border rounded">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="fa fa-user text-info mr-2"></i>
-                                                <h6 class="mb-0">Update Profile</h6>
-                                            </div>
-                                            <a href="/my/employee" class="btn btn-outline-info btn-sm w-100">
-                                                <i class="fa fa-edit"></i> Edit Profile
-                                            </a>
-                                        </div>
-                                    </div>
+                        <!-- Attendance Quick Action -->
+                        <!-- <div class="col-md-6">
+                            <div class="quick-action-card p-3 border rounded">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa fa-clock-o text-primary mr-2"></i>
+                                    <h6 class="mb-0">Attendance</h6>
                                 </div>
-                            </div> 
-                        </div> -->
+                                <t t-if="today_attendances and any(not a.check_out for a in today_attendances)"> -->
+                        <!-- Currently checked in - at least one open attendance -->
+                        <!-- <button class="btn btn-danger btn-sm w-100" onclick="quickCheckOut()">
+                            <i class="fa fa-sign-out"></i> Check Out Now
+                        </button>
+                        <small class="text-success d-block mt-1"> -->
+                        <!-- Safely find the most recent open attendance -->
+                        <!-- <t t-set="open_attendance" t-value="[a for a in today_attendances if not a.check_out][0] if any(not a.check_out for a in today_attendances) else None" />
+                        <t t-if="open_attendance">
+                            Active since <t t-esc="format_datetime(open_attendance.check_in)"/>
+                        </t>
+                        <t t-else="">
+                            Active session
+                        </t>
+                    </small>
+                </t>
+                <t t-elif="today_attendances and len(today_attendances) > 0"> -->
+                        <!-- All attendances are checked out, can check in again -->
+                        <!-- <button class="btn btn-success btn-sm w-100" onclick="quickCheckIn()">
+                            <i class="fa fa-sign-in"></i> Check In Again
+                        </button>
+                        <small class="text-success d-block mt-1">
+                            Last session completed
+                        </small>
+                    </t>
+                    <t t-else=""> -->
+                        <!-- No attendance today -->
+                        <!-- <button class="btn btn-success btn-sm w-100" onclick="quickCheckIn()">
+                            <i class="fa fa-sign-in"></i> Check In Now
+                        </button>
+                    </t>
+                </div>
+            </div> -->
+
+                        <!-- CRM Quick Action -->
+                        <!-- <t t-if="has_crm_access">
+                            <div class="col-md-6">
+                                <div class="quick-action-card p-3 border rounded">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fa fa-plus-circle text-success mr-2"></i>
+                                        <h6 class="mb-0">New Lead</h6>
+                                    </div>
+                                    <a href="/my/employee/crm/create" class="btn btn-outline-success btn-sm w-100">
+                                        <i class="fa fa-plus"></i> Create Lead
+                                    </a>
+                                </div>
+                            </div>
+                        </t> -->
+
+                        <!-- Expense Quick Action -->
+                        <!-- <t t-if="has_expenses_access">
+                            <div class="col-md-6">
+                                <div class="quick-action-card p-3 border rounded">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fa fa-receipt text-warning mr-2"></i>
+                                        <h6 class="mb-0">Add Expense</h6>
+                                    </div>
+                                    <a href="/my/employee/expenses/create" class="btn btn-outline-warning btn-sm w-100">
+                                        <i class="fa fa-plus"></i> Add Expense
+                                    </a>
+                                </div>
+                            </div>
+                        </t> -->
+
+                        <!-- Profile Quick Action -->
+                        <!-- <div class="col-md-6">
+                            <div class="quick-action-card p-3 border rounded">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa fa-user text-info mr-2"></i>
+                                    <h6 class="mb-0">Update Profile</h6>
+                                </div>
+                                <a href="/my/employee" class="btn btn-outline-info btn-sm w-100">
+                                    <i class="fa fa-edit"></i> Edit Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
 
                         <!-- Module Cards -->
                         <div class="row g-4">
@@ -286,28 +395,34 @@
                                         <t t-if="today_attendances and len(today_attendances) > 0">
                                             <div class="attendance-summary mb-3">
                                                 <!-- Calculate total worked hours for all completed attendances -->
-                                                <t t-set="has_open_attendance" t-value="any(not a.check_out for a in today_attendances)" />
-                                                <t t-set="total_worked_hours" t-value="sum(a.worked_hours for a in today_attendances if a.check_out)" />
-                                                <t t-set="completed_sessions" t-value="sum(1 for a in today_attendances if a.check_out)" />
-                                                
+                                                <t t-set="has_open_attendance"
+                                                   t-value="any(not a.check_out for a in today_attendances)"/>
+                                                <t t-set="total_worked_hours"
+                                                   t-value="sum(a.worked_hours for a in today_attendances if a.check_out)"/>
+                                                <t t-set="completed_sessions"
+                                                   t-value="sum(1 for a in today_attendances if a.check_out)"/>
+
                                                 <div class="d-flex justify-content-between">
                                                     <span>Worked Today:</span>
                                                     <strong t-att-class="'text-success' if not has_open_attendance else 'text-warning'">
-                                                        <t t-esc="'%.2f' % total_worked_hours"/> hours
-                                                        <t t-if="has_open_attendance"> + current session</t>
+                                                        <t t-esc="'%.2f' % total_worked_hours"/>
+                                                        hours
+                                                        <t t-if="has_open_attendance">+ current session</t>
                                                     </strong>
                                                 </div>
-                                                
+
                                                 <small class="text-muted d-block mt-1">
-                                                    <t t-esc="completed_sessions"/> completed 
+                                                    <t t-esc="completed_sessions"/>
+                                                    completed
                                                     <t t-if="completed_sessions == 1">session</t>
                                                     <t t-else="">sessions</t>
-                                                    <t t-if="has_open_attendance"> + 1 active</t>
+                                                    <t t-if="has_open_attendance">+ 1 active</t>
                                                 </small>
-                                                
+
                                                 <div class="progress mt-2" style="height: 6px;">
                                                     <t t-if="has_open_attendance">
-                                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" style="width: 75%"></div>
+                                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated"
+                                                             style="width: 75%"></div>
                                                     </t>
                                                     <t t-else="">
                                                         <div class="progress-bar bg-success" style="width: 100%"></div>
@@ -317,11 +432,84 @@
                                         </t>
 
                                         <a href="/my/employee/attendance" class="btn btn-outline-primary btn-sm w-100">
-                                            <i class="fa fa-list"></i> View History
+                                            <i class="fa fa-list"></i>
+                                            View History
                                         </a>
                                     </div>
                                 </div>
                             </div>
+
+
+                            <!-- IT Tickets Card - ADD after Payslips card in Module Cards section -->
+                            <div class="col-md-6">
+                                <div class="module-card card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="icon-circle bg-danger bg-opacity-10 me-3">
+                                                <i class="fa fa-ticket fa-lg text-danger"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="mb-1">IT Support</h5>
+                                                <p class="text-muted mb-0 small">Submit and track IT tickets</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Ticket Stats -->
+                                        <div class="ticket-summary mb-3">
+                                            <div class="row text-center">
+                                                <div class="col-6">
+                                                    <div class="metric-box">
+                                                        <h4 class="text-danger mb-0" t-esc="it_tickets_count or 0"/>
+                                                        <small class="text-muted">Total</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="metric-box">
+                                                        <h4 class="text-warning mb-0" t-esc="it_tickets_pending or 0"/>
+                                                        <small class="text-muted">Pending</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Recent Tickets Preview -->
+                                        <t t-if="it_tickets_recent">
+                                            <div class="mb-3">
+                                                <t t-foreach="it_tickets_recent" t-as="ticket">
+                                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                        <small class="text-truncate me-2" style="max-width:140px;">
+                                                            <t t-esc="ticket.name"/>
+                                                            -
+                                                            <t t-esc="ticket.subject"/>
+                                                        </small>
+                                                        <span t-attf-class="badge badge-{{
+                                'success' if ticket.state == 'done' else
+                                'danger' if ticket.state == 'rejected' else
+                                'warning' if ticket.state in ['manager_approval','it_approval'] else
+                                'secondary'
+                            }} badge-sm" style="font-size:0.65rem;">
+                                                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                                                        </span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2">
+                                            <a href="/my/ess/tickets/new" class="btn btn-danger btn-sm">
+                                                <i class="fa fa-plus me-1"></i>
+                                                Create New Ticket
+                                            </a>
+                                            <a href="/my/tickets" class="btn btn-outline-danger btn-sm">
+                                                <i class="fa fa-list me-1"></i>
+                                                View All Tickets
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
 
                             <!-- CRM Card -->
                             <t t-if="has_crm_access">
@@ -358,7 +546,8 @@
                                             </div>
 
                                             <a href="/my/employee/crm" class="btn btn-outline-info btn-sm w-100">
-                                                <i class="fa fa-eye"></i> View CRM
+                                                <i class="fa fa-eye"></i>
+                                                View CRM
                                             </a>
                                         </div>
                                     </div>
@@ -385,19 +574,24 @@
                                                     <div class="row text-center">
                                                         <div class="col-4">
                                                             <div class="metric-box">
-                                                                <h6 class="text-warning mb-0" t-esc="expense_stats['submitted_count']"/>
+                                                                <h6 class="text-warning mb-0"
+                                                                    t-esc="expense_stats['submitted_count']"/>
                                                                 <small class="text-muted">Pending</small>
                                                             </div>
                                                         </div>
                                                         <div class="col-4">
                                                             <div class="metric-box">
-                                                                <h6 class="text-success mb-0" t-esc="expense_stats['approved_count']"/>
+                                                                <h6 class="text-success mb-0"
+                                                                    t-esc="expense_stats['approved_count']"/>
                                                                 <small class="text-muted">Approved</small>
                                                             </div>
                                                         </div>
                                                         <div class="col-4">
                                                             <div class="metric-box">
-                                                                <h6 class="text-primary mb-0"><t t-esc="employee.company_id.currency_id.symbol"/><t t-esc="'%.0f' % expense_stats['total_amount']"/></h6>
+                                                                <h6 class="text-primary mb-0">
+                                                                    <t t-esc="employee.company_id.currency_id.symbol"/>
+                                                                    <t t-esc="'%.0f' % expense_stats['total_amount']"/>
+                                                                </h6>
                                                                 <small class="text-muted">Total</small>
                                                             </div>
                                                         </div>
@@ -405,8 +599,10 @@
                                                 </div>
                                             </t>
 
-                                            <a href="/my/employee/expenses" class="btn btn-outline-warning btn-sm w-100">
-                                                <i class="fa fa-list"></i> View Expenses
+                                            <a href="/my/employee/expenses"
+                                               class="btn btn-outline-warning btn-sm w-100">
+                                                <i class="fa fa-list"></i>
+                                                View Expenses
                                             </a>
                                         </div>
                                     </div>
@@ -443,8 +639,10 @@
                                                 </t>
                                             </div>
 
-                                            <a href="/my/employee/payslips" class="btn btn-outline-success btn-sm w-100">
-                                                <i class="fa fa-download"></i> View Payslips
+                                            <a href="/my/employee/payslips"
+                                               class="btn btn-outline-success btn-sm w-100">
+                                                <i class="fa fa-download"></i>
+                                                View Payslips
                                             </a>
                                         </div>
                                     </div>
@@ -471,17 +669,20 @@
                                                 <i class="fa fa-clock-o"></i>
                                             </div>
                                             <div class="activity-content">
-                                                <t t-set="latest_attendance" t-value="today_attendances[0]" />
+                                                <t t-set="latest_attendance" t-value="today_attendances[0]"/>
                                                 <t t-if="latest_attendance.check_out">
                                                     <h6 class="mb-1">Completed Work Day</h6>
                                                     <p class="text-muted mb-0 small">
-                                                        Worked <t t-esc="'%.2f' % latest_attendance.worked_hours"/> hours
+                                                        Worked
+                                                        <t t-esc="'%.2f' % latest_attendance.worked_hours"/>
+                                                        hours
                                                     </p>
                                                 </t>
                                                 <t t-else="">
                                                     <h6 class="mb-1">Checked In</h6>
                                                     <p class="text-muted mb-0 small">
-                                                        At <t t-esc="format_datetime(latest_attendance.check_in)"/>
+                                                        At
+                                                        <t t-esc="format_datetime(latest_attendance.check_in)"/>
                                                     </p>
                                                 </t>
                                             </div>
@@ -496,7 +697,8 @@
                                             <div class="activity-content">
                                                 <h6 class="mb-1">Expense Updates</h6>
                                                 <p class="text-muted mb-0 small">
-                                                    <t t-esc="expense_stats['total_count']"/> expenses this month
+                                                    <t t-esc="expense_stats['total_count']"/>
+                                                    expenses this month
                                                 </p>
                                             </div>
                                         </div>
@@ -510,7 +712,8 @@
                                             <div class="activity-content">
                                                 <h6 class="mb-1">CRM Active</h6>
                                                 <p class="text-muted mb-0 small">
-                                                    <t t-esc="crm_leads_count"/> leads to manage
+                                                    <t t-esc="crm_leads_count"/>
+                                                    leads to manage
                                                 </p>
                                             </div>
                                         </div>
@@ -531,7 +734,8 @@
 
                                 <div class="text-center mt-3">
                                     <a href="#" class="btn btn-outline-secondary btn-sm" onclick="refreshActivity()">
-                                        <i class="fa fa-refresh"></i> Refresh Activity
+                                        <i class="fa fa-refresh"></i>
+                                        Refresh Activity
                                     </a>
                                 </div>
                             </div>
@@ -667,147 +871,147 @@
             <!-- Enhanced Dashboard Styles -->
             <style>
                 .icon-circle {
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 }
 
                 .quick-action-card {
-                    transition: all 0.3s ease;
-                    background: #f8f9fa;
+                transition: all 0.3s ease;
+                background: #f8f9fa;
                 }
 
                 .quick-action-card:hover {
-                    background: #e9ecef;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                background: #e9ecef;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 }
 
                 .module-card {
-                    transition: all 0.3s ease;
+                transition: all 0.3s ease;
                 }
 
                 .module-card:hover {
-                    transform: translateY(-5px);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+                transform: translateY(-5px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
                 }
 
                 .metric-box {
-                    padding: 0.5rem;
+                padding: 0.5rem;
                 }
 
                 .activity-timeline {
-                    position: relative;
+                position: relative;
                 }
 
                 .activity-item {
-                    display: flex;
-                    margin-bottom: 1rem;
-                    position: relative;
+                display: flex;
+                margin-bottom: 1rem;
+                position: relative;
                 }
 
                 .activity-item:not(:last-child)::after {
-                    content: '';
-                    position: absolute;
-                    left: 20px;
-                    top: 40px;
-                    width: 2px;
-                    height: 20px;
-                    background: #dee2e6;
+                content: '';
+                position: absolute;
+                left: 20px;
+                top: 40px;
+                width: 2px;
+                height: 20px;
+                background: #dee2e6;
                 }
 
                 .activity-icon {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-right: 0.75rem;
-                    flex-shrink: 0;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 0.75rem;
+                flex-shrink: 0;
                 }
 
                 .activity-icon i {
-                    color: white;
-                    font-size: 14px;
+                color: white;
+                font-size: 14px;
                 }
 
                 .activity-content h6 {
-                    font-size: 0.9rem;
-                    font-weight: 600;
+                font-size: 0.9rem;
+                font-weight: 600;
                 }
 
                 .card {
-                    border-radius: 12px;
+                border-radius: 12px;
                 }
 
                 .btn {
-                    border-radius: 8px;
+                border-radius: 8px;
                 }
 
                 /* Dark mode support */
                 [data-theme="dark"] .card {
-                    background-color: #2d3748;
-                    border-color: #4a5568;
+                background-color: #2d3748;
+                border-color: #4a5568;
                 }
 
                 [data-theme="dark"] .quick-action-card {
-                    background: #4a5568;
-                    border-color: #718096;
+                background: #4a5568;
+                border-color: #718096;
                 }
 
                 [data-theme="dark"] .text-muted {
-                    color: #a0aec0 !important;
+                color: #a0aec0 !important;
                 }
 
                 /* Loading states */
                 .loading {
-                    opacity: 0.7;
-                    pointer-events: none;
+                opacity: 0.7;
+                pointer-events: none;
                 }
 
                 .loading::after {
-                    content: '';
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    width: 20px;
-                    height: 20px;
-                    margin: -10px 0 0 -10px;
-                    border: 2px solid #f3f3f3;
-                    border-top: 2px solid #007bff;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 20px;
+                height: 20px;
+                margin: -10px 0 0 -10px;
+                border: 2px solid #f3f3f3;
+                border-top: 2px solid #007bff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
                 }
 
                 @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
                 }
 
                 /* Responsive adjustments */
                 @media (max-width: 768px) {
-                    .container-fluid {
-                        padding-left: 15px;
-                        padding-right: 15px;
-                    }
-                    
-                    .module-card:hover {
-                        transform: none;
-                    }
-                    
-                    .quick-action-card:hover {
-                        transform: none;
-                    }
+                .container-fluid {
+                padding-left: 15px;
+                padding-right: 15px;
+                }
+
+                .module-card:hover {
+                transform: none;
+                }
+
+                .quick-action-card:hover {
+                transform: none;
+                }
                 }
             </style>
 
             <!-- Enhanced Dashboard JavaScript -->
             <script>
-            <![CDATA[
+                <![CDATA[
             // Global dashboard state
             let dashboardState = {
                 theme: localStorage.getItem('ess-theme') || 'light',

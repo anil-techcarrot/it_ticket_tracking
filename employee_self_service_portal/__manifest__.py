@@ -2,7 +2,7 @@
 {
     "name": "Employee Self Service Portal MLR",
     "version": "19.1.5",
-    "depends": ["portal", "hr", "hr_attendance", "hr_payroll", "hr_holidays", "hr_expense", "techcarrot_crm_mlr"],
+    "depends": ["portal", "hr", "hr_attendance", "hr_payroll", "hr_holidays", "hr_expense", "techcarrot_crm_mlr", "ticketing_it"],
     "category": "Human Resources",
     "author": "Lovaraju Mylapalli",
     "website": "https://www.mlr.com",
@@ -43,7 +43,8 @@
         "views/Employee_details/portal_expense_templates.xml",
         "views/Employee_details/portal_expense_submit.xml",  # New expense submission template
         "views/Employee_details/portal_payslip_templates.xml",  # Payslip templates
-        "views/Employee_details/portal_payslip_view.xml",  # Payslip detail view
+        "views/Employee_details/portal_payslip_view.xml",
+        "views/portal_ess_ticket_form.xml",
     ],
     "installable": True,
     "application": True,
