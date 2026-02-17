@@ -766,8 +766,18 @@ class PortalEmployee(http.Controller):
         employee = self._get_employee()
         if not employee:
             return request.redirect('/my/ess')
+
+        # FIX: Resolve line manager so the template can display it and
+        # disable the submit button when no manager is set.
+        # employee.parent_id  → manager's hr.employee record
+        # .user_id            → that manager's res.users record (has .name)
+        line_manager = None
+        if employee.parent_id and employee.parent_id.user_id:
+            line_manager = employee.parent_id.user_id
+
         values = {
             'employee': employee,
+            'line_manager': line_manager,  # ← NEW: passed to template
             'page_name': 'ess_dashboard',
             'error': kw.get('error'),
             'error_msg': kw.get('error_msg', ''),
