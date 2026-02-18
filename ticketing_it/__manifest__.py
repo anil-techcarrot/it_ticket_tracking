@@ -18,7 +18,7 @@
         'data/ir_sequence.xml',
         'data/email_templates.xml',
         'views/it_ticket_views.xml',
-        'views/portal_templates.xml',
+        # 'views/portal_templates.xml',
         'views/menu_items.xml',
         'wizards/reject_wizard_views.xml',
     ],
