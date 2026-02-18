@@ -10,7 +10,10 @@
                 <nav aria-label="breadcrumb" class="mb-3">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item">
-                            <a href="/my/ess"><i class="fa fa-tachometer"></i> Dashboard</a>
+                            <a href="/my/ess">
+                                <i class="fa fa-tachometer"></i>
+                                Dashboard
+                            </a>
                         </li>
                         <li class="breadcrumb-item active">Create IT Ticket</li>
                     </ol>
@@ -29,7 +32,8 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <a href="/my/tickets" class="btn btn-outline-secondary btn-sm">
-                            <i class="fa fa-list"></i> View My Tickets
+                            <i class="fa fa-list"></i>
+                            View My Tickets
                         </a>
                     </div>
                 </div>
@@ -76,7 +80,8 @@
                                 <!-- Ticket Type -->
                                 <div class="col-md-6">
                                     <label for="ticket_type" class="form-label fw-bold">
-                                        Ticket Type <span class="text-danger">*</span>
+                                        Ticket Type
+                                        <span class="text-danger">*</span>
                                     </label>
                                     <select name="ticket_type" id="ticket_type" class="form-select" required="required">
                                         <option value="">-- Select Issue Type --</option>
@@ -91,7 +96,8 @@
                                 <!-- Priority -->
                                 <div class="col-md-6">
                                     <label for="priority" class="form-label fw-bold">
-                                        Priority <span class="text-danger">*</span>
+                                        Priority
+                                        <span class="text-danger">*</span>
                                     </label>
                                     <select name="priority" id="priority" class="form-select" required="required">
                                         <option value="0">🟢 Low</option>
@@ -104,7 +110,8 @@
                                 <!-- Subject -->
                                 <div class="col-12">
                                     <label for="subject" class="form-label fw-bold">
-                                        Subject <span class="text-danger">*</span>
+                                        Subject
+                                        <span class="text-danger">*</span>
                                     </label>
                                     <input type="text"
                                            name="subject"
@@ -119,7 +126,8 @@
                                 <!-- Description -->
                                 <div class="col-12">
                                     <label for="description" class="form-label fw-bold">
-                                        Description <span class="text-danger">*</span>
+                                        Description
+                                        <span class="text-danger">*</span>
                                     </label>
                                     <textarea name="description"
                                               id="description"
@@ -149,7 +157,8 @@
                                     <div class="form-control bg-light" style="cursor: not-allowed;">
                                         <i class="fa fa-user text-muted me-2"></i>
                                         <t t-esc="employee.name"/>
-                                        <small class="text-muted ms-2">(<t t-esc="employee.job_id.name or 'Employee'"/>)</small>
+                                        <small class="text-muted ms-2">(<t t-esc="employee.job_id.name or 'Employee'"/>)
+                                        </small>
                                     </div>
                                 </div>
 
@@ -161,9 +170,12 @@
                                         <small class="text-muted fw-normal ms-1">(approves this ticket)</small>
                                     </label>
                                     <t t-if="line_manager">
-                                        <div class="form-control bg-light d-flex align-items-center" style="cursor: not-allowed;">
+                                        <div class="form-control bg-light d-flex align-items-center"
+                                             style="cursor: not-allowed;">
                                             <i class="fa fa-user-circle text-primary me-2"></i>
-                                            <span><t t-esc="line_manager.name"/></span>
+                                            <span>
+                                                <t t-esc="line_manager.name"/>
+                                            </span>
                                         </div>
                                         <div class="form-text text-success">
                                             <i class="fa fa-check-circle me-1"></i>
@@ -171,7 +183,8 @@
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <div class="form-control bg-light d-flex align-items-center border-warning" style="cursor: not-allowed;">
+                                        <div class="form-control bg-light d-flex align-items-center border-warning"
+                                             style="cursor: not-allowed;">
                                             <i class="fa fa-exclamation-triangle text-warning me-2"></i>
                                             <span class="text-warning">Not assigned</span>
                                         </div>
@@ -218,7 +231,8 @@
                 <div class="card border-0 bg-light mt-4">
                     <div class="card-body p-3">
                         <h6 class="text-muted mb-2">
-                            <i class="fa fa-info-circle me-1"></i> What happens next?
+                            <i class="fa fa-info-circle me-1"></i>
+                            What happens next?
                         </h6>
                         <div class="row text-center">
                             <div class="col-md-3 mb-2">
@@ -255,6 +269,327 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- Tickets List View -->
+    <template id="portal_my_tickets" name="My IT Tickets">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal container my-4">
+
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="/my/ess">
+                                <i class="fa fa-tachometer"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active">My IT Tickets</li>
+                    </ol>
+                </nav>
+
+                <!-- Header -->
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-8">
+                        <h2 class="mb-1">
+                            <i class="fa fa-ticket text-danger me-2"></i>
+                            My IT Support Tickets
+                        </h2>
+                        <p class="text-muted mb-0">
+                            View and track all your IT support requests
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="/my/ess/tickets/new" class="btn btn-danger">
+                            <i class="fa fa-plus"></i>
+                            Create New Ticket
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="btn-group w-100" role="group">
+                            <t t-foreach="searchbar_filters.items()" t-as="filter_item">
+                                <t t-set="filter_key" t-value="filter_item[0]"/>
+                                <t t-set="filter_val" t-value="filter_item[1]"/>
+                                <a t-att-href="'/my/tickets?filterby=' + filter_key"
+                                   t-attf-class="btn btn-sm #{filterby == filter_key and 'btn-danger' or 'btn-outline-secondary'}">
+                                    <t t-esc="filter_val['label']"/>
+                                </a>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tickets List -->
+                <t t-if="tickets">
+                    <div class="row">
+                        <t t-foreach="tickets" t-as="ticket">
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <!-- Ticket Header -->
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="mb-1">
+                                                    <a t-attf-href="/my/tickets/{{ticket.id}}"
+                                                       class="text-decoration-none">
+                                                        <t t-esc="ticket.name"/>
+                                                    </a>
+                                                </h5>
+                                                <p class="text-muted mb-0 small">
+                                                    <t t-esc="ticket.subject"/>
+                                                </p>
+                                            </div>
+                                            <!-- State Badge -->
+                                            <span t-attf-class="badge bg-{{
+                                                'success' if ticket.state == 'done' else
+                                                'danger' if ticket.state == 'rejected' else
+                                                'warning' if ticket.state in ['manager_approval','it_approval'] else
+                                                'info' if ticket.state in ['assigned','in_progress'] else
+                                                'secondary'
+                                            }}">
+                                                <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                                            </span>
+                                        </div>
+
+                                        <!-- Ticket Details -->
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Type:</small>
+                                                <span class="badge bg-light text-dark">
+                                                    <t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/>
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Priority:</small>
+                                                <span t-attf-class="badge {{
+                                                    'bg-danger' if ticket.priority == '3' else
+                                                    'bg-warning' if ticket.priority == '2' else
+                                                    'bg-info' if ticket.priority == '1' else
+                                                    'bg-secondary'
+                                                }}">
+                                                    <t t-esc="dict(ticket._fields['priority'].selection).get(ticket.priority)"/>
+                                                </span>
+                                            </div>
+                                            <div class="col-12">
+                                                <small class="text-muted d-block">Created:</small>
+                                                <small>
+                                                    <i class="fa fa-clock-o me-1"></i>
+                                                    <t t-esc="ticket.create_date.strftime('%Y-%m-%d %H:%M')"/>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Button -->
+                                        <a t-attf-href="/my/tickets/{{ticket.id}}"
+                                           class="btn btn-outline-danger btn-sm w-100">
+                                            <i class="fa fa-eye"></i>
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+
+                <!-- Empty State -->
+                <t t-else="">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="fa fa-ticket fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted mb-3">No Tickets Found</h4>
+                            <p class="text-muted mb-4">
+                                You haven't created any IT support tickets yet.
+                            </p>
+                            <a href="/my/ess/tickets/new" class="btn btn-danger">
+                                <i class="fa fa-plus"></i>
+                                Create Your First Ticket
+                            </a>
+                        </div>
+                    </div>
+                </t>
+
+            </div>
+        </t>
+    </template>
+
+    <!-- Single Ticket Detail View -->
+    <template id="portal_my_ticket_detail" name="IT Ticket Detail">
+        <t t-call="portal.portal_layout">
+            <div class="o_portal container my-4">
+
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="/my/ess">
+                                <i class="fa fa-tachometer"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="/my/tickets">
+                                <i class="fa fa-ticket"></i>
+                                My Tickets
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" t-esc="ticket.name"/>
+                    </ol>
+                </nav>
+
+                <!-- Ticket Header -->
+                <div class="row align-items-center mb-4">
+                    <div class="col-md-8">
+                        <h2 class="mb-1">
+                            <i class="fa fa-ticket text-danger me-2"></i>
+                            <t t-esc="ticket.name"/>
+                        </h2>
+                        <p class="text-muted mb-0" t-esc="ticket.subject"/>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span t-attf-class="badge bg-{{
+                            'success' if ticket.state == 'done' else
+                            'danger' if ticket.state == 'rejected' else
+                            'warning' if ticket.state in ['manager_approval','it_approval'] else
+                            'info' if ticket.state in ['assigned','in_progress'] else
+                            'secondary'
+                        }} fs-5 px-3 py-2">
+                            <t t-esc="dict(ticket._fields['state'].selection).get(ticket.state)"/>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Main Content -->
+                    <div class="col-lg-8">
+                        <!-- Ticket Details Card -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-transparent border-0 py-3">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-info-circle text-danger me-2"></i>
+                                    Ticket Details
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="text-muted small">Ticket Type</label>
+                                        <p class="mb-0 fw-bold">
+                                            <t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="text-muted small">Priority</label>
+                                        <p class="mb-0">
+                                            <span t-attf-class="badge {{
+                                                'bg-danger' if ticket.priority == '3' else
+                                                'bg-warning' if ticket.priority == '2' else
+                                                'bg-info' if ticket.priority == '1' else
+                                                'bg-secondary'
+                                            }}">
+                                                <t t-esc="dict(ticket._fields['priority'].selection).get(ticket.priority)"/>
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="text-muted small">Submitted Date</label>
+                                        <p class="mb-0">
+                                            <i class="fa fa-calendar me-1"></i>
+                                            <t t-esc="ticket.submitted_date.strftime('%Y-%m-%d %H:%M') if ticket.submitted_date else 'Not submitted yet'"/>
+                                        </p>
+                                    </div>
+                                    <t t-if="ticket.required_date">
+                                        <div class="col-md-6">
+                                            <label class="text-muted small">Required By</label>
+                                            <p class="mb-0">
+                                                <i class="fa fa-clock-o me-1"></i>
+                                                <t t-esc="ticket.required_date.strftime('%Y-%m-%d')"/>
+                                            </p>
+                                        </div>
+                                    </t>
+                                    <div class="col-12">
+                                        <label class="text-muted small">Description</label>
+                                        <div class="border rounded p-3 bg-light">
+                                            <t t-raw="ticket.description"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection Reason (if rejected) -->
+                        <t t-if="ticket.state == 'rejected' and ticket.rejection_reason">
+                            <div class="card border-danger shadow-sm mb-4">
+                                <div class="card-header bg-danger text-white py-3">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-times-circle me-2"></i>
+                                        Rejection Reason
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <p class="mb-0">
+                                        <t t-esc="ticket.rejection_reason"/>
+                                    </p>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <!-- Assignees Card -->
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-transparent border-0 py-3">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-users text-danger me-2"></i>
+                                    Assigned To
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <t t-if="ticket.line_manager_id">
+                                    <p class="mb-2">
+                                        <strong>Line Manager:</strong>
+                                        <br/>
+                                        <i class="fa fa-user me-1"></i>
+                                        <t t-esc="ticket.line_manager_id.name"/>
+                                    </p>
+                                </t>
+                                <t t-if="ticket.it_manager_id">
+                                    <p class="mb-2">
+                                        <strong>IT Manager:</strong>
+                                        <br/>
+                                        <i class="fa fa-user me-1"></i>
+                                        <t t-esc="ticket.it_manager_id.name"/>
+                                    </p>
+                                </t>
+                                <t t-if="ticket.assigned_to_id">
+                                    <p class="mb-0">
+                                        <strong>IT Team Member:</strong>
+                                        <br/>
+                                        <i class="fa fa-user me-1"></i>
+                                        <t t-esc="ticket.assigned_to_id.name"/>
+                                    </p>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="text-center mt-4">
+                    <a href="/my/tickets" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fa fa-arrow-left me-2"></i>
+                        Back to My Tickets
+                    </a>
                 </div>
 
             </div>
