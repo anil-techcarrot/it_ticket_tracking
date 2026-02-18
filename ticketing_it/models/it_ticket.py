@@ -185,9 +185,43 @@ class ITTicket(models.Model):
 
         for record in records:
             if record.env.user.has_group('base.group_portal'):
-                record.action_submit()
+                # Hardware tickets go DIRECTLY to IT Team (skip approvals)
+                if record.ticket_type == 'hardware':
+                    record.action_assign_to_it_team()
+                else:
+                    # All other tickets go through approval workflow
+                    record.action_submit()
 
         return records
+
+    def action_assign_to_it_team(self):
+        """Assign Hardware tickets directly to IT Team (skip approvals)"""
+        for rec in self:
+            rec.write({
+                'state': 'assigned',
+                'submitted_date': fields.Datetime.now(),
+            })
+
+            # Send notification to IT Team
+            template = self.env.ref(
+                'ticketing_it.email_template_it_assigned',
+                raise_if_not_found=False
+            )
+            if template:
+                template.send_mail(rec.id, force_send=True)
+
+            # Create activity for IT Manager to assign the ticket
+            if rec.it_manager_id:
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.it_manager_id.id,
+                    summary=_('Hardware Ticket - Assign to IT Team: %s') % rec.name,
+                    note=_('Hardware issue reported by %s. Please assign to IT team member.') % rec.employee_id.name
+                )
+
+            rec.message_post(
+                body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
+            )
 
     # =========================================================
     # WORKFLOW METHODS - APPROVE/REJECT
