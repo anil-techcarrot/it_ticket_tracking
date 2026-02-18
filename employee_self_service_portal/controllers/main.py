@@ -784,6 +784,85 @@ class PortalEmployee(http.Controller):
         }
         return request.render('employee_self_service_portal.portal_ess_ticket_form', values)
 
+    @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth='user', website=True)
+    def portal_my_tickets(self, page=1, sortby=None, filterby=None, **kw):
+        """Display all IT tickets for the current portal user"""
+
+        employee = self._get_employee()
+        if not employee:
+            return request.redirect('/my/ess')
+
+        # Base domain - tickets created by this employee
+        domain = [('employee_id', '=', employee.id)]
+
+        # Sorting options
+        searchbar_sortings = {
+            'date': {'label': 'Newest First', 'order': 'create_date desc'},
+            'name': {'label': 'Ticket Number', 'order': 'name'},
+            'state': {'label': 'Status', 'order': 'state'},
+        }
+
+        # Filter options
+        searchbar_filters = {
+            'all': {'label': 'All', 'domain': []},
+            'pending': {'label': 'Pending Approval', 'domain': [('state', 'in', ['manager_approval', 'it_approval'])]},
+            'active': {'label': 'Active', 'domain': [('state', 'in', ['assigned', 'in_progress'])]},
+            'done': {'label': 'Completed', 'domain': [('state', '=', 'done')]},
+            'rejected': {'label': 'Rejected', 'domain': [('state', '=', 'rejected')]},
+        }
+
+        # Default sort and filter
+        if not sortby:
+            sortby = 'date'
+        if not filterby:
+            filterby = 'all'
+
+        order = searchbar_sortings[sortby]['order']
+        domain += searchbar_filters[filterby]['domain']
+
+        # Get tickets
+        tickets = request.env['it.ticket'].sudo().search(domain, order=order)
+
+        values = {
+            'tickets': tickets,
+            'page_name': 'tickets',
+            'searchbar_sortings': searchbar_sortings,
+            'searchbar_filters': searchbar_filters,
+            'sortby': sortby,
+            'filterby': filterby,
+            'employee': employee,
+        }
+
+        return request.render('employee_self_service_portal.portal_my_tickets', values)
+
+    @http.route(['/my/tickets/<int:ticket_id>'], type='http', auth='user', website=True)
+    def portal_my_ticket_detail(self, ticket_id, **kw):
+        """Display single ticket details"""
+
+        employee = self._get_employee()
+        if not employee:
+            return request.redirect('/my/ess')
+
+        # Get ticket (only if it belongs to this employee)
+        ticket = request.env['it.ticket'].sudo().search([
+            ('id', '=', ticket_id),
+            ('employee_id', '=', employee.id)
+        ], limit=1)
+
+        if not ticket:
+            return request.redirect('/my/tickets')
+
+        values = {
+            'ticket': ticket,
+            'page_name': 'tickets',
+            'employee': employee,
+        }
+
+        return request.render('employee_self_service_portal.portal_my_ticket_detail', values)
+
+
+
+
     @http.route('/my/ess/tickets/submit', type='http', auth='user', website=True, methods=['POST'], csrf=True)
     def portal_ess_ticket_submit(self, **post):
         """Submit new IT ticket from ESS dashboard"""
@@ -810,6 +889,9 @@ class PortalEmployee(http.Controller):
             _logger.error("Error creating IT ticket from ESS portal: %s", e)
             request.env.cr.rollback()
             return request.redirect('/my/ess/tickets/new?error=1&error_msg=Failed+to+create+ticket.+Please+try+again.')
+
+
+
 
     @http.route('/my/ess/enhanced', type='http', auth='user', website=True)
     def portal_ess_dashboard_enhanced(self, **kwargs):
