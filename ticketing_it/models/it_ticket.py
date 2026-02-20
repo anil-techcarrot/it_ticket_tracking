@@ -112,6 +112,11 @@ class ITTicket(models.Model):
     it_approval_date = fields.Datetime(readonly=True, string='IT Approval Date')
     done_date = fields.Datetime(readonly=True, string='Completion Date')
 
+    last_reminder_sent = fields.Datetime(
+        readonly=True,
+        string='Last Reminder Sent'
+    )
+
     # ======================
     # REJECTION
     # ======================
@@ -427,6 +432,174 @@ class ITTicket(models.Model):
                 body=_("Ticket completed by %s and employee notified") % self.env.user.name
             )
 
+    def action_send_manager_reminder(self):
+        """
+        Called by the scheduled action every 24 hours.
+        Sends a reminder email to the line manager for every ticket
+        that is still in 'manager_approval' state.
+        Reminder stops automatically when manager approves or rejects.
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        # When called from scheduled action, self is empty — search all pending
+        if not self:
+            pending_tickets = self.search([
+                ('state', '=', 'manager_approval'),
+            ])
+        else:
+            pending_tickets = self
+
+        _logger.info(
+            "24hr Reminder: Found %d tickets pending manager approval.",
+            len(pending_tickets)
+        )
+
+        for ticket in pending_tickets:
+            try:
+                # ── Safety Checks ─────────────────────────────────────────────
+
+                if not ticket.employee_id:
+                    _logger.warning(
+                        "Ticket %s: No employee linked. Skipping reminder.",
+                        ticket.name
+                    )
+                    continue
+
+                if not ticket.line_manager_id:
+                    _logger.warning(
+                        "Ticket %s: Employee %s has no line manager. Skipping.",
+                        ticket.name, ticket.employee_id.name
+                    )
+                    continue
+
+                if not ticket.line_manager_id.email:
+                    _logger.warning(
+                        "Ticket %s: Line manager %s has no email. Skipping.",
+                        ticket.name, ticket.line_manager_id.name
+                    )
+                    continue
+
+                manager = ticket.line_manager_id
+
+                # ── Send Email Using Template ─────────────────────────────────
+
+                template = self.env.ref(
+                    'ticketing_it.email_template_manager_reminder_24hr',
+                    raise_if_not_found=False
+                )
+
+                if template:
+                    template.send_mail(ticket.id, force_send=True)
+                    _logger.info(
+                        "24hr reminder sent → Ticket: %s | Manager: %s (%s)",
+                        ticket.name, manager.name, manager.email
+                    )
+                else:
+                    # ── Fallback: Send Without Template ───────────────────────
+                    mail_values = {
+                        'subject': _('Reminder: IT Ticket Awaiting Your Approval - %s') % ticket.name,
+                        'body_html': '''
+                            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                                <div style="background-color: #e74c3c; padding: 15px;
+                                            border-radius: 5px; margin-bottom: 20px;">
+                                    <h2 style="color: white; margin: 0;">
+                                        &#9200; Approval Reminder
+                                    </h2>
+                                </div>
+                                <p>Dear <strong>{manager}</strong>,</p>
+                                <p>This is a <strong>24-hour reminder</strong> that the
+                                following IT ticket is still pending your approval.</p>
+                                <table style="border-collapse: collapse; width: 100%;">
+                                    <tr style="background:#f2f2f2;">
+                                        <td style="padding:8px; border:1px solid #ddd; width:35%;">
+                                            <strong>Ticket Number</strong>
+                                        </td>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            {name}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            <strong>Subject</strong>
+                                        </td>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            {subject}
+                                        </td>
+                                    </tr>
+                                    <tr style="background:#f2f2f2;">
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            <strong>Raised By</strong>
+                                        </td>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            {employee}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            <strong>Priority</strong>
+                                        </td>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            {priority}
+                                        </td>
+                                    </tr>
+                                    <tr style="background:#f2f2f2;">
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            <strong>Submitted On</strong>
+                                        </td>
+                                        <td style="padding:8px; border:1px solid #ddd;">
+                                            {submitted}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p>Please log in and <strong>Approve or Reject</strong>
+                                this ticket immediately.</p>
+                                <p style="color:grey; font-size:12px;">
+                                    You will receive this reminder every 24 hours
+                                    until you take action on this ticket.
+                                </p>
+                            </div>
+                        '''.format(
+                            manager=manager.name,
+                            name=ticket.name,
+                            subject=ticket.subject or 'N/A',
+                            employee=ticket.employee_id.name,
+                            priority=dict(
+                                ticket._fields['priority'].selection
+                            ).get(ticket.priority, ticket.priority),
+                            submitted=str(ticket.submitted_date or ticket.create_date),
+                        ),
+                        'email_to': manager.email,
+                        'email_from': self.env.user.email or 'noreply@company.com',
+                    }
+                    mail = self.env['mail.mail'].sudo().create(mail_values)
+                    mail.send()
+                    _logger.info(
+                        "Fallback 24hr reminder sent → Ticket: %s | Manager: %s",
+                        ticket.name, manager.name
+                    )
+
+                # ── Update Timestamp & Log in Chatter ────────────────────────
+
+                ticket.sudo().write({
+                    'last_reminder_sent': fields.Datetime.now()
+                })
+
+                ticket.message_post(
+                    body=_(
+                        "&#128231; 24-hour reminder sent to line manager "
+                        "<strong>%s</strong> (%s) for approval."
+                    ) % (manager.name, manager.email),
+                    message_type='notification',
+                )
+
+            except Exception as e:
+                _logger.error(
+                    "Failed to send 24hr reminder for ticket %s: %s",
+                    ticket.name, str(e)
+                )
+                continue
+
     # =========================================================
     # PORTAL ACCESS URL
     # =========================================================
@@ -436,3 +609,4 @@ class ITTicket(models.Model):
         super()._compute_access_url()
         for ticket in self:
             ticket.access_url = '/my/tickets/%s' % ticket.id
+

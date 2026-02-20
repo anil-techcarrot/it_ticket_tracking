@@ -19,6 +19,7 @@
         'data/email_templates.xml',
         'views/it_ticket_views.xml',
         # 'views/portal_templates.xml',
+        'data/scheduled_actions.xml',
         'views/menu_items.xml',
         'wizards/reject_wizard_views.xml',
     ],
