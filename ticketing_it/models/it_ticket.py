@@ -260,11 +260,19 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """
-        Get IT Manager using reliable group membership search.
-        Uses _get_it_manager_user() which searches by groups_id directly.
-        """
-        it_manager = self._get_it_manager_user()
+        """Get IT Manager from IT Manager security group — Odoo 17 compatible"""
+        it_manager = False
+        it_manager_group = self.env.ref(
+            'ticketing_it.group_it_manager',
+            raise_if_not_found=False
+        )
+        if it_manager_group:
+            # Odoo 17+: access users via group.users (not searchable domain)
+            active_users = it_manager_group.sudo().users.filtered(
+                lambda u: u.active and not u.share
+            )
+            if active_users:
+                it_manager = active_users[0]
         for rec in self:
             rec.it_manager_id = it_manager if it_manager else False
 
