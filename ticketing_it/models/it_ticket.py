@@ -260,19 +260,29 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """Get IT Manager from IT Manager security group — Odoo 17 compatible"""
+        """Get IT Manager from IT Manager security group — safe for all Odoo 17 versions"""
         it_manager = False
-        it_manager_group = self.env.ref(
-            'ticketing_it.group_it_manager',
-            raise_if_not_found=False
-        )
-        if it_manager_group:
-            # Odoo 17+: access users via group.users (not searchable domain)
-            active_users = it_manager_group.sudo().users.filtered(
-                lambda u: u.active and not u.share
+        try:
+            it_manager_group = self.env.ref(
+                'ticketing_it.group_it_manager',
+                raise_if_not_found=False
             )
-            if active_users:
-                it_manager = active_users[0]
+            if it_manager_group:
+                # Use SQL directly — works in all Odoo 17 versions
+                self.env.cr.execute("""
+                    SELECT ru.id FROM res_users ru
+                    JOIN res_groups_users_rel rel ON rel.uid = ru.id
+                    WHERE rel.gid = %s
+                      AND ru.active = true
+                      AND ru.share = false
+                    LIMIT 1
+                """, (it_manager_group.id,))
+                row = self.env.cr.fetchone()
+                if row:
+                    it_manager = self.env['res.users'].sudo().browse(row[0])
+        except Exception as e:
+            _logger.error("Error finding IT Manager: %s", str(e))
+
         for rec in self:
             rec.it_manager_id = it_manager if it_manager else False
 
