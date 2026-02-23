@@ -115,7 +115,6 @@ class ITTicket(models.Model):
     it_approval_date = fields.Datetime(readonly=True, string='IT Approval Date')
     done_date = fields.Datetime(readonly=True, string='Completion Date')
 
-    # Tracks when the last 24hr reminder was sent to line manager
     last_reminder_sent = fields.Datetime(
         readonly=True,
         string='Last Reminder Sent'
@@ -131,32 +130,95 @@ class ITTicket(models.Model):
 
     # =========================================================
     # HELPER: GET FROM EMAIL DYNAMICALLY FROM ODOO SETTINGS
-    # No email is hardcoded — admin configures it in UI only
-    # Settings → General Settings → Default From Email
     # =========================================================
 
     def _get_from_email(self):
         """
-        Get the central FROM email dynamically from Odoo system settings.
-        Admin sets this once in:
-          Settings → General Settings → Default From Email
-        No email address is ever hardcoded in the code.
+        Get central FROM email from Odoo settings.
+        Admin sets once in Settings → General Settings → Default From Email.
+        Never hardcoded in code.
         """
         ICP = self.env['ir.config_parameter'].sudo()
         default_from = ICP.get_param('mail.default.from')
         catchall_domain = ICP.get_param('mail.catchall.domain')
 
         if default_from:
-            # If domain is set, combine them properly
             if catchall_domain and '@' not in default_from:
                 return '{}@{}'.format(default_from, catchall_domain)
             return default_from
 
-        # Final fallback: use the company email
         company_email = self.env.company.email
         if company_email:
             return company_email
 
+        return False
+
+    # =========================================================
+    # HELPER: GET IT MANAGER USER
+    # Searches by group membership — reliable method
+    # Admin assigns user to IT Manager group in Settings → Users
+    # =========================================================
+
+    def _get_it_manager_user(self):
+        """
+        Find the IT Manager user by searching group membership directly.
+        This is more reliable than env.ref().user_ids.
+
+        Admin assigns IT Manager in:
+          Settings → Users → [user] → Groups button → Add IT Manager group
+        No email or name hardcoded anywhere.
+        """
+        # Search users who belong to the IT Manager group directly
+        it_manager_group = self.env.ref(
+            'ticketing_it.group_it_manager',
+            raise_if_not_found=False
+        )
+
+        if it_manager_group:
+            # Direct search via groups_id — most reliable method
+            it_manager_users = self.env['res.users'].sudo().search([
+                ('groups_id', 'in', [it_manager_group.id]),
+                ('active', '=', True),
+                ('share', '=', False),  # internal users only, not portal
+            ], limit=1)
+
+            if it_manager_users:
+                _logger.info(
+                    "IT Manager found: %s | Email: %s",
+                    it_manager_users.name,
+                    it_manager_users.email
+                )
+                return it_manager_users
+            else:
+                _logger.warning(
+                    "IT Manager group exists but has NO internal users assigned. "
+                    "Go to Settings → Users → Jane Smith → Groups → Add IT Manager."
+                )
+        else:
+            _logger.warning(
+                "IT Manager group 'ticketing_it.group_it_manager' not found. "
+                "Check your module security/security.xml file."
+            )
+
+        # Fallback: search by job title
+        it_employee = self.env['hr.employee'].sudo().search([
+            ('job_title', 'ilike', 'IT Manager'),
+            ('user_id', '!=', False),
+            ('user_id.active', '=', True),
+        ], limit=1)
+
+        if it_employee and it_employee.user_id:
+            _logger.info(
+                "IT Manager found via job title fallback: %s | Email: %s",
+                it_employee.user_id.name,
+                it_employee.user_id.email
+            )
+            return it_employee.user_id
+
+        _logger.error(
+            "No IT Manager found by any method. "
+            "Please assign Jane Smith to the IT Manager group."
+        )
         return False
 
     # =========================================================
@@ -198,16 +260,13 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """Get IT Manager from IT Manager security group"""
+        """
+        Get IT Manager using reliable group membership search.
+        Uses _get_it_manager_user() which searches by groups_id directly.
+        """
+        it_manager = self._get_it_manager_user()
         for rec in self:
-            it_manager_group = self.env.ref(
-                'ticketing_it.group_it_manager',
-                raise_if_not_found=False
-            )
-            if it_manager_group and it_manager_group.user_ids:
-                rec.it_manager_id = it_manager_group.user_ids[0]
-            else:
-                rec.it_manager_id = False
+            rec.it_manager_id = it_manager if it_manager else False
 
     # =========================================================
     # CREATE (AUTO-SUBMIT FOR PORTAL USERS)
@@ -224,11 +283,9 @@ class ITTicket(models.Model):
 
         for record in records:
             if record.env.user.has_group('base.group_portal'):
-                # Hardware tickets go DIRECTLY to IT Team (skip approvals)
                 if record.ticket_type == 'hardware':
                     record.action_assign_to_it_team()
                 else:
-                    # All other tickets go through approval workflow
                     record.action_submit()
 
         return records
@@ -241,7 +298,6 @@ class ITTicket(models.Model):
                 'submitted_date': fields.Datetime.now(),
             })
 
-            # Send notification to IT Team
             template = self.env.ref(
                 'ticketing_it.email_template_it_assigned',
                 raise_if_not_found=False
@@ -249,7 +305,6 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Create activity for IT Manager to assign the ticket
             if rec.it_manager_id:
                 rec.activity_schedule(
                     'mail.mail_activity_data_todo',
@@ -296,7 +351,11 @@ class ITTicket(models.Model):
             )
 
     def action_manager_approve(self):
-        """Line manager approves ticket - sends to IT manager"""
+        """
+        Line manager approves ticket — sends email to IT manager.
+        KEY FIX: Re-fetches IT manager at approval time using _get_it_manager_user()
+        so even old tickets with empty it_manager_id will work correctly.
+        """
         for rec in self:
             if self.env.user != rec.line_manager_id:
                 raise UserError(
@@ -308,23 +367,52 @@ class ITTicket(models.Model):
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            template = self.env.ref(
-                'ticketing_it.email_template_it_approval',
-                raise_if_not_found=False
-            )
-            if template and rec.it_manager_id:
-                template.send_mail(rec.id, force_send=True)
+            # KEY FIX: Always re-fetch IT manager at approval time
+            # This fixes old tickets where it_manager_id was empty
+            it_manager = rec._get_it_manager_user()
+            if it_manager and not rec.it_manager_id:
+                rec.sudo().write({'it_manager_id': it_manager.id})
 
-            if rec.it_manager_id:
-                rec.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    user_id=rec.it_manager_id.id,
-                    summary=_('IT Approval Required: %s') % rec.name,
-                    note=_('Ticket approved by line manager. Please review.')
+            # Use the freshly fetched manager for sending email
+            effective_it_manager = rec.it_manager_id or it_manager
+
+            if not effective_it_manager:
+                _logger.error(
+                    "Cannot send IT approval email for ticket %s — "
+                    "no IT Manager found. Please assign a user to IT Manager group.",
+                    rec.name
                 )
+                rec.message_post(
+                    body=_("WARNING: No IT Manager found. Please assign a user "
+                           "to the IT Manager group in Settings → Users.")
+                )
+            else:
+                template = self.env.ref(
+                    'ticketing_it.email_template_it_approval',
+                    raise_if_not_found=False
+                )
+                if template:
+                    template.send_mail(rec.id, force_send=True)
+                    _logger.info(
+                        "IT approval email sent → Manager: %s | Email: %s | Ticket: %s",
+                        effective_it_manager.name,
+                        effective_it_manager.email,
+                        rec.name
+                    )
+
+                if effective_it_manager:
+                    rec.activity_schedule(
+                        'mail.mail_activity_data_todo',
+                        user_id=effective_it_manager.id,
+                        summary=_('IT Approval Required: %s') % rec.name,
+                        note=_('Ticket approved by line manager. Please review.')
+                    )
 
             rec.message_post(
-                body=_("Approved by Line Manager: %s. Sent to IT Manager.") % self.env.user.name
+                body=_("Approved by Line Manager: %s. Sent to IT Manager: %s") % (
+                    self.env.user.name,
+                    effective_it_manager.name if effective_it_manager else 'NOT FOUND'
+                )
             )
 
     def action_it_approve(self):
@@ -350,20 +438,8 @@ class ITTicket(models.Model):
             )
 
     def action_reject(self):
-        """Open wizard to reject ticket with reason.
-
-        FIX: The wizard model (it.ticket.reject.wizard) previously had no ACL
-        rules, so any non-admin user clicking Reject got an Access Denied error
-        when Odoo tried to load the wizard form view.
-
-        Security is enforced inside do_reject() instead — only the assigned
-        line manager (for manager_approval state) or an IT manager
-        (for it_approval state) may actually complete the rejection.
-        """
+        """Open wizard to reject ticket with reason."""
         self.ensure_one()
-
-        # Check that the current user is actually allowed to reject
-        # before even opening the wizard, so they get a clear message.
         self._check_reject_access()
 
         return {
@@ -376,12 +452,7 @@ class ITTicket(models.Model):
         }
 
     def _check_reject_access(self):
-        """Verify the current user is allowed to reject this ticket.
-
-        - In state 'manager_approval': only the assigned line manager may reject.
-        - In state 'it_approval': only IT managers may reject.
-        - Other states: no one may reject via this button.
-        """
+        """Verify the current user is allowed to reject this ticket."""
         self.ensure_one()
         user = self.env.user
 
@@ -401,16 +472,8 @@ class ITTicket(models.Model):
             )
 
     def do_reject(self, reason):
-        """Actually reject the ticket (called from wizard).
-
-        FIX: Use sudo() when writing rejection fields because the wizard
-        runs under the calling user's rights, and those fields are marked
-        readonly in the view/field definition.  sudo() is safe here because
-        access has already been validated by _check_reject_access() before
-        the wizard was opened.
-        """
+        """Actually reject the ticket (called from wizard)."""
         for rec in self:
-            # Re-validate in case someone calls do_reject directly
             rec._check_reject_access()
 
             rec.sudo().write({
@@ -420,10 +483,8 @@ class ITTicket(models.Model):
                 'rejected_date': fields.Datetime.now(),
             })
 
-            # Clear pending activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Send rejection email to the employee (portal user)
             template = self.env.ref(
                 'ticketing_it.email_template_rejection',
                 raise_if_not_found=False
@@ -431,7 +492,6 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # Log in chatter
             rec.message_post(
                 body=_("Ticket rejected by %s<br/>Reason: %s") % (self.env.user.name, reason)
             )
@@ -473,20 +533,11 @@ class ITTicket(models.Model):
     def action_send_manager_reminder(self):
         """
         Called by the scheduled action every 24 hours.
-        Sends a reminder email to the line manager for every ticket
-        that is still in 'manager_approval' state.
-        Reminder stops automatically when manager approves or rejects.
-
-        FROM email is read dynamically from Odoo Settings.
-        No email address is hardcoded here.
-        Admin configures it once in:
-          Settings → General Settings → Default From Email
+        Sends reminder email to line manager for pending tickets.
+        FROM email is read dynamically from Odoo Settings — never hardcoded.
         """
-        # When called from scheduled action, self is empty — search all pending
         if not self:
-            pending_tickets = self.search([
-                ('state', '=', 'manager_approval'),
-            ])
+            pending_tickets = self.search([('state', '=', 'manager_approval')])
         else:
             pending_tickets = self
 
@@ -497,32 +548,14 @@ class ITTicket(models.Model):
 
         for ticket in pending_tickets:
             try:
-                # ── Safety Checks ─────────────────────────────────────────────
-
                 if not ticket.employee_id:
-                    _logger.warning(
-                        "Ticket %s: No employee linked. Skipping reminder.",
-                        ticket.name
-                    )
                     continue
-
                 if not ticket.line_manager_id:
-                    _logger.warning(
-                        "Ticket %s: Employee %s has no line manager. Skipping.",
-                        ticket.name, ticket.employee_id.name
-                    )
                     continue
-
                 if not ticket.line_manager_id.email:
-                    _logger.warning(
-                        "Ticket %s: Line manager %s has no email. Skipping.",
-                        ticket.name, ticket.line_manager_id.name
-                    )
                     continue
 
                 manager = ticket.line_manager_id
-
-                # ── Send Email Using Template ─────────────────────────────────
 
                 template = self.env.ref(
                     'ticketing_it.email_template_manager_reminder_24hr',
@@ -536,102 +569,36 @@ class ITTicket(models.Model):
                         ticket.name, manager.name, manager.email
                     )
                 else:
-                    # ── Fallback: Send Without Template ───────────────────────
-                    # FROM email is read from Odoo settings — never hardcoded
                     from_email = ticket._get_from_email()
-
                     mail_values = {
                         'subject': _('Reminder: IT Ticket Awaiting Your Approval - %s') % ticket.name,
                         'body_html': '''
                             <div style="font-family: Arial, sans-serif; padding: 20px;">
-                                <div style="background-color: #e74c3c; padding: 15px;
-                                            border-radius: 5px; margin-bottom: 20px;">
-                                    <h2 style="color: white; margin: 0;">
-                                        Approval Reminder
-                                    </h2>
-                                </div>
+                                <h2 style="color: #e74c3c;">Approval Reminder</h2>
                                 <p>Dear <strong>{manager}</strong>,</p>
-                                <p>This is a <strong>24-hour reminder</strong> that the
-                                following IT ticket is still pending your approval.</p>
-                                <table style="border-collapse: collapse; width: 100%;">
-                                    <tr style="background:#f2f2f2;">
-                                        <td style="padding:8px; border:1px solid #ddd; width:35%;">
-                                            <strong>Ticket Number</strong>
-                                        </td>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            {name}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            <strong>Subject</strong>
-                                        </td>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            {subject}
-                                        </td>
-                                    </tr>
-                                    <tr style="background:#f2f2f2;">
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            <strong>Raised By</strong>
-                                        </td>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            {employee}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            <strong>Priority</strong>
-                                        </td>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            {priority}
-                                        </td>
-                                    </tr>
-                                    <tr style="background:#f2f2f2;">
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            <strong>Submitted On</strong>
-                                        </td>
-                                        <td style="padding:8px; border:1px solid #ddd;">
-                                            {submitted}
-                                        </td>
-                                    </tr>
-                                </table>
-                                <p>Please log in and <strong>Approve or Reject</strong>
-                                this ticket immediately.</p>
+                                <p>Ticket <strong>{name}</strong> raised by
+                                <strong>{employee}</strong> is still pending your approval.</p>
+                                <p>Please log in and approve or reject immediately.</p>
                                 <p style="color:grey; font-size:12px;">
                                     You will receive this reminder every 24 hours
-                                    until you take action on this ticket.
+                                    until you take action.
                                 </p>
                             </div>
                         '''.format(
                             manager=manager.name,
                             name=ticket.name,
-                            subject=ticket.subject or 'N/A',
                             employee=ticket.employee_id.name,
-                            priority=dict(
-                                ticket._fields['priority'].selection
-                            ).get(ticket.priority, ticket.priority),
-                            submitted=str(ticket.submitted_date or ticket.create_date),
                         ),
                         'email_to': manager.email,
-                        'email_from': from_email,  # ← from Odoo settings, not hardcoded
+                        'email_from': from_email,
                     }
                     mail = self.env['mail.mail'].sudo().create(mail_values)
                     mail.send()
-                    _logger.info(
-                        "Fallback 24hr reminder sent → Ticket: %s | Manager: %s",
-                        ticket.name, manager.name
-                    )
 
-                # ── Update Timestamp & Log in Chatter ────────────────────────
-
-                ticket.sudo().write({
-                    'last_reminder_sent': fields.Datetime.now()
-                })
-
+                ticket.sudo().write({'last_reminder_sent': fields.Datetime.now()})
                 ticket.message_post(
                     body=_(
-                        "24-hour reminder sent to line manager "
-                        "<strong>%s</strong> (%s) for approval."
+                        "24-hour reminder sent to line manager <strong>%s</strong> (%s)."
                     ) % (manager.name, manager.email),
                     message_type='notification',
                 )
