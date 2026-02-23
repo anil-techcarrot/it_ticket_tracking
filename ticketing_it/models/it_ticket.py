@@ -2,6 +2,9 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ITTicket(models.Model):
@@ -112,6 +115,7 @@ class ITTicket(models.Model):
     it_approval_date = fields.Datetime(readonly=True, string='IT Approval Date')
     done_date = fields.Datetime(readonly=True, string='Completion Date')
 
+    # Tracks when the last 24hr reminder was sent to line manager
     last_reminder_sent = fields.Datetime(
         readonly=True,
         string='Last Reminder Sent'
@@ -126,11 +130,41 @@ class ITTicket(models.Model):
     rejected_date = fields.Datetime(readonly=True, string='Rejection Date')
 
     # =========================================================
+    # HELPER: GET FROM EMAIL DYNAMICALLY FROM ODOO SETTINGS
+    # No email is hardcoded — admin configures it in UI only
+    # Settings → General Settings → Default From Email
+    # =========================================================
+
+    def _get_from_email(self):
+        """
+        Get the central FROM email dynamically from Odoo system settings.
+        Admin sets this once in:
+          Settings → General Settings → Default From Email
+        No email address is ever hardcoded in the code.
+        """
+        ICP = self.env['ir.config_parameter'].sudo()
+        default_from = ICP.get_param('mail.default.from')
+        catchall_domain = ICP.get_param('mail.catchall.domain')
+
+        if default_from:
+            # If domain is set, combine them properly
+            if catchall_domain and '@' not in default_from:
+                return '{}@{}'.format(default_from, catchall_domain)
+            return default_from
+
+        # Final fallback: use the company email
+        company_email = self.env.company.email
+        if company_email:
+            return company_email
+
+        return False
+
+    # =========================================================
     # DISPLAY NAME
     # =========================================================
 
     def _compute_display_name(self):
-        """Odoo 19 uses _compute_display_name instead of name_get"""
+        """Odoo 17+ uses _compute_display_name instead of name_get"""
         for record in self:
             name = record.name or 'New'
             if record.subject:
@@ -432,16 +466,22 @@ class ITTicket(models.Model):
                 body=_("Ticket completed by %s and employee notified") % self.env.user.name
             )
 
+    # =========================================================
+    # 24 HOUR MANAGER REMINDER (CALLED BY SCHEDULED ACTION)
+    # =========================================================
+
     def action_send_manager_reminder(self):
         """
         Called by the scheduled action every 24 hours.
         Sends a reminder email to the line manager for every ticket
         that is still in 'manager_approval' state.
         Reminder stops automatically when manager approves or rejects.
-        """
-        import logging
-        _logger = logging.getLogger(__name__)
 
+        FROM email is read dynamically from Odoo Settings.
+        No email address is hardcoded here.
+        Admin configures it once in:
+          Settings → General Settings → Default From Email
+        """
         # When called from scheduled action, self is empty — search all pending
         if not self:
             pending_tickets = self.search([
@@ -497,6 +537,9 @@ class ITTicket(models.Model):
                     )
                 else:
                     # ── Fallback: Send Without Template ───────────────────────
+                    # FROM email is read from Odoo settings — never hardcoded
+                    from_email = ticket._get_from_email()
+
                     mail_values = {
                         'subject': _('Reminder: IT Ticket Awaiting Your Approval - %s') % ticket.name,
                         'body_html': '''
@@ -504,7 +547,7 @@ class ITTicket(models.Model):
                                 <div style="background-color: #e74c3c; padding: 15px;
                                             border-radius: 5px; margin-bottom: 20px;">
                                     <h2 style="color: white; margin: 0;">
-                                        &#9200; Approval Reminder
+                                        Approval Reminder
                                     </h2>
                                 </div>
                                 <p>Dear <strong>{manager}</strong>,</p>
@@ -570,7 +613,7 @@ class ITTicket(models.Model):
                             submitted=str(ticket.submitted_date or ticket.create_date),
                         ),
                         'email_to': manager.email,
-                        'email_from': self.env.user.email or 'noreply@company.com',
+                        'email_from': from_email,  # ← from Odoo settings, not hardcoded
                     }
                     mail = self.env['mail.mail'].sudo().create(mail_values)
                     mail.send()
@@ -587,7 +630,7 @@ class ITTicket(models.Model):
 
                 ticket.message_post(
                     body=_(
-                        "&#128231; 24-hour reminder sent to line manager "
+                        "24-hour reminder sent to line manager "
                         "<strong>%s</strong> (%s) for approval."
                     ) % (manager.name, manager.email),
                     message_type='notification',
@@ -609,4 +652,3 @@ class ITTicket(models.Model):
         super()._compute_access_url()
         for ticket in self:
             ticket.access_url = '/my/tickets/%s' % ticket.id
-

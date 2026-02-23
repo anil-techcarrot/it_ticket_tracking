@@ -7,75 +7,271 @@
             <field name="name">IT Ticket - Manager Approval Request</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">Action Required: IT Ticket Approval - ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
             <field name="email_to">${object.line_manager_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #2c3e50; padding: 15px; border-radius: 5px;">
+                        <h2 style="color: white; margin: 0;">IT Ticket - Approval Required</h2>
+                    </div>
+                    <p>Dear <strong>${object.line_manager_id.name}</strong>,</p>
+                    <p>An IT ticket has been submitted by your team member and requires your approval.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Raised By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.employee_id.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Type</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.ticket_type}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Priority</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.priority}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Required By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.required_date or 'Not specified'}</td>
+                        </tr>
+                    </table>
+                    <p>Please log in to <strong>Approve or Reject</strong> this ticket.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This is an automated notification. Please do not reply to this email.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
 
-        <!-- 2. 24hr Reminder -->
+        <!-- 2. 24hr Reminder to Line Manager -->
         <record id="email_template_manager_reminder_24hr" model="mail.template">
             <field name="name">IT Ticket - 24hr Manager Approval Reminder</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">Reminder: IT Ticket Awaiting Your Approval - ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
             <field name="email_to">${object.line_manager_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #e74c3c; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h2 style="color: white; margin: 0;">Approval Reminder</h2>
+                        <p style="color: white; margin: 5px 0 0 0;">This ticket is still waiting for your approval.</p>
+                    </div>
+                    <p>Dear <strong>${object.line_manager_id.name}</strong>,</p>
+                    <p>This is a <strong style="color: #e74c3c;">24-hour reminder</strong> that the following
+                    IT ticket is still pending your approval. You will continue receiving this reminder
+                    every 24 hours until you approve or reject the ticket.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Raised By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.employee_id.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Priority</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.priority}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Submitted On</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.submitted_date}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Last Reminder Sent</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.last_reminder_sent or 'First reminder'}</td>
+                        </tr>
+                    </table>
+                    <p>Please log in and <strong>Approve or Reject</strong> immediately.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This reminder stops automatically once you take action on this ticket.
+                        This is an automated notification. Please do not reply.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
 
-        <!-- 3. IT Manager Approval -->
+        <!-- 3. IT Manager Approval Request -->
         <record id="email_template_it_approval" model="mail.template">
             <field name="name">IT Ticket - IT Manager Approval Request</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">IT Approval Required: ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
             <field name="email_to">${object.it_manager_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #2980b9; padding: 15px; border-radius: 5px;">
+                        <h2 style="color: white; margin: 0;">IT Manager Approval Required</h2>
+                    </div>
+                    <p>Dear <strong>${object.it_manager_id.name}</strong>,</p>
+                    <p>An IT ticket has been approved by the line manager and now requires your approval.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Raised By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.employee_id.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Line Manager Approved</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                ${object.line_manager_id.name} on ${object.manager_approval_date}
+                            </td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Priority</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.priority}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Required By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.required_date or 'Not specified'}</td>
+                        </tr>
+                    </table>
+                    <p>Please log in to approve or reject this ticket.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This is an automated notification. Please do not reply.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
 
-        <!-- 4. Assigned to IT Team -->
+        <!-- 4. Assigned to IT Team — notify employee -->
         <record id="email_template_it_assigned" model="mail.template">
             <field name="name">IT Ticket - Assigned to IT Team</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
-            <field name="subject">IT Ticket Assigned: ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
+            <field name="subject">Your Ticket Has Been Approved: ${object.name}</field>
             <field name="email_to">${object.employee_id.user_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #27ae60; padding: 15px; border-radius: 5px;">
+                        <h2 style="color: white; margin: 0;">Your Ticket Has Been Approved</h2>
+                    </div>
+                    <p>Dear <strong>${object.employee_id.name}</strong>,</p>
+                    <p>Your IT ticket has been approved and assigned to the IT team. They will begin working on it shortly.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Status</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">Assigned to IT Team</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Priority</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.priority}</td>
+                        </tr>
+                    </table>
+                    <p>You will be notified once the work is complete.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This is an automated notification. Please do not reply.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
 
-        <!-- 5. Rejection -->
+        <!-- 5. Rejection — notify employee -->
         <record id="email_template_rejection" model="mail.template">
             <field name="name">IT Ticket - Rejected</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">IT Ticket Rejected: ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
             <field name="email_to">${object.employee_id.user_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #c0392b; padding: 15px; border-radius: 5px;">
+                        <h2 style="color: white; margin: 0;">Ticket Rejected</h2>
+                    </div>
+                    <p>Dear <strong>${object.employee_id.name}</strong>,</p>
+                    <p>Unfortunately your IT ticket has been rejected.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Rejected By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.rejected_by_id.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Rejection Date</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.rejected_date}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Reason</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.rejection_reason or 'No reason provided'}</td>
+                        </tr>
+                    </table>
+                    <p>Please contact your line manager for more information.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This is an automated notification. Please do not reply.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
 
-        <!-- 6. Done -->
+        <!-- 6. Done — notify employee -->
         <record id="email_template_done" model="mail.template">
             <field name="name">IT Ticket - Completed</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">IT Ticket Completed: ${object.name}</field>
-            <field name="email_from">${(user.email or company.email) | safe}</field>
             <field name="email_to">${object.employee_id.user_id.email | safe}</field>
             <field name="body_html"><![CDATA[
-                ...same body as before...
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+                    <div style="background-color: #27ae60; padding: 15px; border-radius: 5px;">
+                        <h2 style="color: white; margin: 0;">Your Ticket Is Resolved</h2>
+                    </div>
+                    <p>Dear <strong>${object.employee_id.name}</strong>,</p>
+                    <p>Your IT ticket has been resolved and completed.</p>
+                    <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Ticket Number</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Subject</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.subject}</td>
+                        </tr>
+                        <tr style="background-color: #f2f2f2;">
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Completed On</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.done_date}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Resolved By</strong></td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${object.assigned_to_id.name or 'IT Team'}</td>
+                        </tr>
+                    </table>
+                    <p>If the issue persists, please raise a new ticket.</p>
+                    <p style="color: grey; font-size: 12px;">
+                        This is an automated notification. Please do not reply.
+                    </p>
+                </div>
             ]]></field>
             <field name="auto_delete" eval="True"/>
         </record>
