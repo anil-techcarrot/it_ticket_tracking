@@ -154,70 +154,55 @@ class ITTicket(models.Model):
         return False
 
     # =========================================================
-    # HELPER: GET IT MANAGER USER
-    # Searches by group membership — reliable method
-    # Admin assigns user to IT Manager group in Settings → Users
+    # HELPER: FIND IT MANAGER VIA SQL
+    # Uses raw SQL on res_groups_users_rel table.
+    # This is the ONLY reliable method in all Odoo 17 versions.
+    # groups_id domain search is broken in this Odoo build.
+    # Admin assigns IT Manager in Settings → Users → Groups button.
+    # No names or emails hardcoded anywhere.
     # =========================================================
 
-    def _get_it_manager_user(self):
+    def _find_it_manager(self):
         """
-        Find the IT Manager user by searching group membership directly.
-        This is more reliable than env.ref().user_ids.
-
-        Admin assigns IT Manager in:
-          Settings → Users → [user] → Groups button → Add IT Manager group
-        No email or name hardcoded anywhere.
+        Find IT Manager user via direct SQL on the groups-users relation table.
+        Works in all Odoo 17 versions — avoids the broken groups_id domain search.
         """
-        # Search users who belong to the IT Manager group directly
         it_manager_group = self.env.ref(
             'ticketing_it.group_it_manager',
             raise_if_not_found=False
         )
-
-        if it_manager_group:
-            # Direct search via groups_id — most reliable method
-            it_manager_users = self.env['res.users'].sudo().search([
-                ('groups_id', 'in', [it_manager_group.id]),
-                ('active', '=', True),
-                ('share', '=', False),  # internal users only, not portal
-            ], limit=1)
-
-            if it_manager_users:
-                _logger.info(
-                    "IT Manager found: %s | Email: %s",
-                    it_manager_users.name,
-                    it_manager_users.email
-                )
-                return it_manager_users
-            else:
-                _logger.warning(
-                    "IT Manager group exists but has NO internal users assigned. "
-                    "Go to Settings → Users → Jane Smith → Groups → Add IT Manager."
-                )
-        else:
-            _logger.warning(
+        if not it_manager_group:
+            _logger.error(
                 "IT Manager group 'ticketing_it.group_it_manager' not found. "
-                "Check your module security/security.xml file."
+                "Check security/security.xml in your module."
             )
+            return False
 
-        # Fallback: search by job title
-        it_employee = self.env['hr.employee'].sudo().search([
-            ('job_title', 'ilike', 'IT Manager'),
-            ('user_id', '!=', False),
-            ('user_id.active', '=', True),
-        ], limit=1)
+        # Direct SQL — bypasses the broken domain search entirely
+        self.env.cr.execute("""
+            SELECT ru.id
+            FROM res_users ru
+            JOIN res_groups_users_rel rel ON rel.uid = ru.id
+            WHERE rel.gid = %s
+              AND ru.active = true
+              AND ru.share = false
+            ORDER BY ru.id
+            LIMIT 1
+        """, (it_manager_group.id,))
 
-        if it_employee and it_employee.user_id:
+        row = self.env.cr.fetchone()
+        if row:
+            user = self.env['res.users'].sudo().browse(row[0])
             _logger.info(
-                "IT Manager found via job title fallback: %s | Email: %s",
-                it_employee.user_id.name,
-                it_employee.user_id.email
+                "IT Manager found via SQL: %s | Email: %s",
+                user.name, user.email
             )
-            return it_employee.user_id
+            return user
 
-        _logger.error(
-            "No IT Manager found by any method. "
-            "Please assign Jane Smith to the IT Manager group."
+        _logger.warning(
+            "No IT Manager found in group. "
+            "Go to Settings → Users → [your IT manager user] → "
+            "Groups button → Add 'IT Manager' group."
         )
         return False
 
@@ -260,29 +245,11 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """Get IT Manager from IT Manager security group — safe for all Odoo 17 versions"""
-        it_manager = False
-        try:
-            it_manager_group = self.env.ref(
-                'ticketing_it.group_it_manager',
-                raise_if_not_found=False
-            )
-            if it_manager_group:
-                # Use SQL directly — works in all Odoo 17 versions
-                self.env.cr.execute("""
-                    SELECT ru.id FROM res_users ru
-                    JOIN res_groups_users_rel rel ON rel.uid = ru.id
-                    WHERE rel.gid = %s
-                      AND ru.active = true
-                      AND ru.share = false
-                    LIMIT 1
-                """, (it_manager_group.id,))
-                row = self.env.cr.fetchone()
-                if row:
-                    it_manager = self.env['res.users'].sudo().browse(row[0])
-        except Exception as e:
-            _logger.error("Error finding IT Manager: %s", str(e))
-
+        """
+        Get IT Manager via SQL — safe for all Odoo 17 versions.
+        groups_id domain search is broken in this Odoo build, so we use SQL.
+        """
+        it_manager = self._find_it_manager()
         for rec in self:
             rec.it_manager_id = it_manager if it_manager else False
 
@@ -369,11 +336,7 @@ class ITTicket(models.Model):
             )
 
     def action_manager_approve(self):
-        """
-        Line manager approves ticket — sends email to IT manager.
-        KEY FIX: Re-fetches IT manager at approval time using _get_it_manager_user()
-        so even old tickets with empty it_manager_id will work correctly.
-        """
+        """Line manager approves ticket — sends email to IT manager"""
         for rec in self:
             if self.env.user != rec.line_manager_id:
                 raise UserError(
@@ -385,26 +348,14 @@ class ITTicket(models.Model):
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # KEY FIX: Always re-fetch IT manager at approval time
+            # Always re-fetch IT manager via SQL at approval time
             # This fixes old tickets where it_manager_id was empty
-            it_manager = rec._get_it_manager_user()
-            if it_manager and not rec.it_manager_id:
-                rec.sudo().write({'it_manager_id': it_manager.id})
+            if not rec.it_manager_id:
+                it_manager = rec._find_it_manager()
+                if it_manager:
+                    rec.sudo().write({'it_manager_id': it_manager.id})
 
-            # Use the freshly fetched manager for sending email
-            effective_it_manager = rec.it_manager_id or it_manager
-
-            if not effective_it_manager:
-                _logger.error(
-                    "Cannot send IT approval email for ticket %s — "
-                    "no IT Manager found. Please assign a user to IT Manager group.",
-                    rec.name
-                )
-                rec.message_post(
-                    body=_("WARNING: No IT Manager found. Please assign a user "
-                           "to the IT Manager group in Settings → Users.")
-                )
-            else:
+            if rec.it_manager_id:
                 template = self.env.ref(
                     'ticketing_it.email_template_it_approval',
                     raise_if_not_found=False
@@ -412,26 +363,30 @@ class ITTicket(models.Model):
                 if template:
                     template.send_mail(rec.id, force_send=True)
                     _logger.info(
-                        "IT approval email sent → Manager: %s | Email: %s | Ticket: %s",
-                        effective_it_manager.name,
-                        effective_it_manager.email,
+                        "IT approval email sent to %s (%s) for ticket %s",
+                        rec.it_manager_id.name,
+                        rec.it_manager_id.email,
                         rec.name
                     )
 
-                if effective_it_manager:
-                    rec.activity_schedule(
-                        'mail.mail_activity_data_todo',
-                        user_id=effective_it_manager.id,
-                        summary=_('IT Approval Required: %s') % rec.name,
-                        note=_('Ticket approved by line manager. Please review.')
-                    )
-
-            rec.message_post(
-                body=_("Approved by Line Manager: %s. Sent to IT Manager: %s") % (
-                    self.env.user.name,
-                    effective_it_manager.name if effective_it_manager else 'NOT FOUND'
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.it_manager_id.id,
+                    summary=_('IT Approval Required: %s') % rec.name,
+                    note=_('Ticket approved by line manager. Please review.')
                 )
-            )
+
+                rec.message_post(
+                    body=_("Approved by Line Manager: %s. Sent to IT Manager: %s") % (
+                        self.env.user.name,
+                        rec.it_manager_id.name
+                    )
+                )
+            else:
+                rec.message_post(
+                    body=_("Approved by Line Manager: %s. WARNING: No IT Manager found — "
+                           "please assign a user to the IT Manager group.") % self.env.user.name
+                )
 
     def action_it_approve(self):
         """IT manager approves ticket - assigns to IT team"""
@@ -550,9 +505,9 @@ class ITTicket(models.Model):
 
     def action_send_manager_reminder(self):
         """
-        Called by the scheduled action every 24 hours.
+        Called by scheduled action every 24 hours.
         Sends reminder email to line manager for pending tickets.
-        FROM email is read dynamically from Odoo Settings — never hardcoded.
+        FROM email read dynamically from Odoo Settings — never hardcoded.
         """
         if not self:
             pending_tickets = self.search([('state', '=', 'manager_approval')])
