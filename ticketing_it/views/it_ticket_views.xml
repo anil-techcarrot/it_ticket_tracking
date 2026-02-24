@@ -125,7 +125,7 @@
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','it_approval')]</field>
+        <field name="domain">[('state','=','it_approval'),('it_manager_id','=',uid)]</field>
         <field name="context">{}</field>
     </record>
 

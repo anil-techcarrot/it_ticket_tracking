@@ -48,14 +48,15 @@
     </record>
 
     <!-- IT Manager sees all tickets with full access -->
+    <!-- IT Manager sees only tickets assigned to them -->
     <record id="rule_it_ticket_it_manager" model="ir.rule">
-        <field name="name">IT Manager: Full Access</field>
+        <field name="name">IT Manager: Own Assigned Tickets</field>
         <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="domain_force">[('it_manager_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('group_it_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
     </record>
 </odoo>
