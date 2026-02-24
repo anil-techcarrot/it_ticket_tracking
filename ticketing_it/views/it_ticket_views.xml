@@ -58,7 +58,6 @@
                             groups="ticketing_it.group_it_team"
                             invisible="state != 'assigned'"/>
 
-
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
