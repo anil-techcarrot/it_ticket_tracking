@@ -58,7 +58,6 @@
                             groups="ticketing_it.group_it_team"
                             invisible="state != 'assigned'"/>
 
-
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
@@ -105,8 +104,13 @@
         </field>
     </record>
 
-    <!-- ACTIONS -->
-    <!-- Admin sees all tickets -->
+    <!-- ============================================================
+         ACTIONS
+         Each action filters tickets relevant to the logged-in user.
+         uid = current logged-in user's ID (Odoo built-in variable)
+         ============================================================ -->
+
+    <!-- ALL TICKETS: Admin sees everything, others see their own -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -115,32 +119,21 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- Line Manager sees tickets pending their approval -->
+    <!-- PENDING MY APPROVAL: Line Manager sees only their pending approvals -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','manager_approval'),('line_manager_id','=',uid)]</field>
+        <field name="domain">[('state', '=', 'manager_approval'), ('line_manager_id', '=', uid)]</field>
         <field name="context">{}</field>
     </record>
 
-    <!-- IT Manager sees only their assigned tickets in it_approval state -->
+    <!-- PENDING IT APPROVAL: IT Manager sees only their tickets in it_approval -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','it_approval'),('it_manager_id','=',uid)]</field>
-        <field name="context">{}</field>
-    </record>
-
-    <!-- IT Manager: My Tickets (all states assigned to me) -->
-    <record id="action_it_ticket_my_it" model="ir.actions.act_window">
-        <field name="name">My IT Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">
-            [('it_manager_id','=',uid),('state','in',['it_approval','assigned','in_progress','done','rejected'])]
-        </field>
+        <field name="domain">[('state', '=', 'it_approval'), ('it_manager_id', '=', uid)]</field>
         <field name="context">{}</field>
     </record>
 

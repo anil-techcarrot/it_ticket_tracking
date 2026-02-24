@@ -9,9 +9,24 @@
         <field name="name">IT Support Team</field>
     </record>
 
-    <!-- Record Rules -->
+    <!-- ============================================================
+         RECORD RULES
+         Logic:
+         - Employee (portal): sees only their own submitted tickets
+         - Line Manager (internal user): sees only tickets where
+           they are the line manager AND state is manager_approval
+         - IT Manager: sees only tickets where they are the IT manager
+           AND state is it_approval or beyond
+         - IT Team: sees all tickets in assigned/in_progress/done
+         - Admin: sees everything (no rule = full access)
 
-    <!-- Portal users see only their tickets -->
+         IMPORTANT: For internal users, rules with the SAME group
+         are combined with OR. Rules for DIFFERENT groups are AND-ed.
+         We remove the broad "Internal User: All Tickets" rule and
+         replace it with specific rules per role.
+         ============================================================ -->
+
+    <!-- Portal users: see only their own tickets (all states) -->
     <record id="rule_it_ticket_portal" model="ir.rule">
         <field name="name">Portal: Own Tickets Only</field>
         <field name="model_id" ref="model_it_ticket"/>
@@ -23,32 +38,19 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- Internal users see all tickets -->
-    <record id="rule_it_ticket_user" model="ir.rule">
-        <field name="name">Internal User: All Tickets</field>
+    <!-- Line Manager: sees only tickets pending their own approval -->
+    <record id="rule_it_ticket_line_manager" model="ir.rule">
+        <field name="name">Line Manager: Own Pending Approvals</field>
         <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="domain_force">[('line_manager_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
+        <field name="perm_create" eval="False"/>
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- IT Team sees all tickets with full access -->
-    <record id="rule_it_ticket_it_team" model="ir.rule">
-        <field name="name">IT Team: Full Access</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[(4, ref('group_it_team'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- IT Manager sees all tickets with full access -->
-    <!-- IT Manager sees only tickets assigned to them -->
+    <!-- IT Manager: sees only tickets assigned to them as IT Manager -->
     <record id="rule_it_ticket_it_manager" model="ir.rule">
         <field name="name">IT Manager: Own Assigned Tickets</field>
         <field name="model_id" ref="model_it_ticket"/>
@@ -59,4 +61,17 @@
         <field name="perm_create" eval="False"/>
         <field name="perm_unlink" eval="False"/>
     </record>
+
+    <!-- IT Support Team: sees tickets in assigned/in_progress/done -->
+    <record id="rule_it_ticket_it_team" model="ir.rule">
+        <field name="name">IT Team: Assigned and Active Tickets</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="domain_force">[('state', 'in', ['assigned', 'in_progress', 'done'])]</field>
+        <field name="groups" eval="[(4, ref('group_it_team'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
 </odoo>
