@@ -41,29 +41,48 @@ class HREmployee(models.Model):
         for employee in employees:
             employee._update_portal_access_groups()
         return employees
-    
+
     def _update_portal_access_groups(self):
-        """Update the user's access groups based on portal access settings"""
+        """Update the user's access groups based on portal access settings.
+        Odoo 19: groups_id write is broken — use direct SQL instead.
+        """
         for employee in self:
             if not employee.user_id:
                 continue
-                
+
             user = employee.user_id
-            
-            # Dictionary mapping access fields to security groups
+
             access_groups = {
-                'portal_access_crm': self.env.ref('employee_self_service_portal.group_portal_crm'),
-                'portal_access_attendance': self.env.ref('employee_self_service_portal.group_portal_attendance'),
-                # 'portal_access_expenses': self.env.ref('employee_self_service_portal.group_portal_expenses'),
-                'portal_access_payslip': self.env.ref('employee_self_service_portal.group_portal_payslip'),
+                'portal_access_crm': self.env.ref(
+                    'employee_self_service_portal.group_portal_crm',
+                    raise_if_not_found=False
+                ),
+                'portal_access_attendance': self.env.ref(
+                    'employee_self_service_portal.group_portal_attendance',
+                    raise_if_not_found=False
+                ),
+                'portal_access_payslip': self.env.ref(
+                    'employee_self_service_portal.group_portal_payslip',
+                    raise_if_not_found=False
+                ),
             }
-            
-            # Add or remove user from groups based on settings
+
             for field_name, group in access_groups.items():
+                if not group:
+                    continue
                 if employee[field_name]:
-                    user.sudo().write({'groups_id': [(4, group.id)]})
+                    # Add user to group via SQL
+                    self.env.cr.execute("""
+                        INSERT INTO res_groups_users_rel (gid, uid)
+                        VALUES (%s, %s)
+                        ON CONFLICT DO NOTHING
+                    """, (group.id, user.id))
                 else:
-                    user.sudo().write({'groups_id': [(3, group.id)]})
+                    # Remove user from group via SQL
+                    self.env.cr.execute("""
+                        DELETE FROM res_groups_users_rel
+                        WHERE gid = %s AND uid = %s
+                    """, (group.id, user.id))
     
     x_experience = fields.Text("Experience")
     x_skills = fields.Char("Skills")
