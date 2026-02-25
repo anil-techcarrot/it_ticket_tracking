@@ -55,7 +55,6 @@
                             string="Start Work"
                             type="object"
                             class="btn-primary"
-                            groups="ticketing_it.group_it_team"
                             invisible="state != 'assigned'"/>
 
                     <button name="action_done"

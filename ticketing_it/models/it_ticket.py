@@ -163,10 +163,7 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _find_it_manager(self):
-        """
-        Find IT Manager user via direct SQL on the groups-users relation table.
-        Works in all Odoo 17 versions — avoids the broken groups_id domain search.
-        """
+
         it_manager_group = self.env.ref(
             'ticketing_it.group_it_manager',
             raise_if_not_found=False
