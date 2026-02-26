@@ -39,6 +39,6 @@ class ResUsers(models.Model):
                 'name': validation.get('name', email),
                 'login': email,
                 'email': email,
-                'groups_id': [(6, 0, [portal_group.id])],
+                'sel_groups_1_10_11': portal_group.id,
             })
         return super()._auth_oauth_signin(provider, validation, params)
