@@ -38,28 +38,59 @@ class ResUsers(models.Model):
         if not email:
             raise Exception("Email not provided by Azure AD")
 
+        # Check if user already exists
         user = self.sudo().search([('login', '=', email)], limit=1)
 
-        if not user:
-            _logger.info("Azure SSO: Creating portal user for %s", email)
-            portal_group = self.env.ref('base.group_portal')
-            env = self.env(user=SUPERUSER_ID)
-            user = env['res.users'].with_context(
-                no_reset_password=True,
-            ).create({
-                'name': validation.get('name', email),
-                'login': email,
-                'email': email,
-                'active': True,
-                'group_ids': [(6, 0, [portal_group.id])],
-            })
-            _logger.info("Azure SSO: Portal user created: %s (id=%s)", email, user.id)
+        if user:
+            # User exists — just link oauth_uid if not linked yet
+            if oauth_uid and not user.oauth_uid:
+                user.sudo().write({
+                    'oauth_uid': oauth_uid,
+                    'oauth_provider_id': provider,
+                })
+            _logger.info("Azure SSO: Existing user login: %s", email)
 
-        # Always make sure oauth_uid is linked
-        if oauth_uid and not user.oauth_uid:
-            user.sudo().write({
-                'oauth_uid': oauth_uid,
-                'oauth_provider_id': provider,
-            })
+        else:
+            # User does NOT exist — check if email is internal domain
+            internal_domains = ['techcarrot.ae']  # ← Add your company domains here
+            email_domain = email.split('@')[-1].lower()
+
+            if email_domain in internal_domains:
+                # Create INTERNAL USER for company employees
+                _logger.info("Azure SSO: Creating internal user for %s", email)
+                env = self.env(user=SUPERUSER_ID)
+                internal_group = self.env.ref('base.group_user')
+                user = env['res.users'].with_context(
+                    no_reset_password=True,
+                ).create({
+                    'name': validation.get('name', email),
+                    'login': email,
+                    'email': email,
+                    'active': True,
+                    'group_ids': [(6, 0, [internal_group.id])],
+                })
+            else:
+                # Create PORTAL USER for external users
+                _logger.info("Azure SSO: Creating portal user for %s", email)
+                env = self.env(user=SUPERUSER_ID)
+                portal_group = self.env.ref('base.group_portal')
+                user = env['res.users'].with_context(
+                    no_reset_password=True,
+                ).create({
+                    'name': validation.get('name', email),
+                    'login': email,
+                    'email': email,
+                    'active': True,
+                    'group_ids': [(6, 0, [portal_group.id])],
+                })
+
+            # Link oauth_uid
+            if oauth_uid:
+                user.sudo().write({
+                    'oauth_uid': oauth_uid,
+                    'oauth_provider_id': provider,
+                })
+
+            _logger.info("Azure SSO: User created successfully: %s", email)
 
         return super()._auth_oauth_signin(provider, validation, params)
