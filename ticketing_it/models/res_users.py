@@ -1,4 +1,4 @@
-from odoo import models, api
+from odoo import models, api, SUPERUSER_ID
 import requests
 import logging
 
@@ -31,33 +31,32 @@ class ResUsers(models.Model):
         if not email:
             raise Exception("Email not provided by Azure AD")
 
+        # Check if user already exists
         user = self.sudo().search([('login', '=', email)], limit=1)
+
         if not user:
             _logger.info("Azure SSO: Creating portal user for %s", email)
-            portal_group = self.env.ref('base.group_portal')
+            try:
+                portal_group = self.env.ref('base.group_portal')
 
-            # Use signup values to create user properly
-            values = {
-                'name': validation.get('name', email),
-                'login': email,
-                'email': email,
-                'active': True,
-            }
-            # Create partner first
-            partner = self.env['res.partner'].sudo().create({
-                'name': values['name'],
-                'email': email,
-            })
-            values['partner_id'] = partner.id
+                # Use env with SUPERUSER_ID directly
+                env = self.env(user=SUPERUSER_ID)
 
-            # Create user with SUPERUSER to avoid permission issues
-            user = self.with_user(1).create(values)
+                new_user = env['res.users'].with_context(
+                    no_reset_password=True,
+                    create_user=True
+                ).create({
+                    'name': validation.get('name', email),
+                    'login': email,
+                    'email': email,
+                    'active': True,
+                    'groups_id': [(6, 0, [portal_group.id])],
+                })
 
-            # Now safely assign portal group
-            user.with_user(1).write({
-                'groups_id': [(4, portal_group.id)]
-            })
+                _logger.info("Azure SSO: Portal user created: %s (id=%s)", email, new_user.id)
 
-            _logger.info("Azure SSO: Portal user created for %s", email)
+            except Exception as e:
+                _logger.error("Azure SSO: Failed to create user %s: %s", email, str(e))
+                raise
 
         return super()._auth_oauth_signin(provider, validation, params)
