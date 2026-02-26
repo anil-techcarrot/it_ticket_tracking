@@ -23,7 +23,7 @@ class ResUsers(models.Model):
 
         return {
             'sub': user_id,
-            'user_id': user_id,  # ← This was missing!
+            'user_id': user_id,
             'id': user_id,
             'email': email,
             'name': data.get('displayName'),
@@ -33,6 +33,8 @@ class ResUsers(models.Model):
     @api.model
     def _auth_oauth_signin(self, provider, validation, params):
         email = validation.get('email')
+        oauth_uid = validation.get('user_id')
+
         if not email:
             raise Exception("Email not provided by Azure AD")
 
@@ -42,7 +44,7 @@ class ResUsers(models.Model):
             _logger.info("Azure SSO: Creating portal user for %s", email)
             portal_group = self.env.ref('base.group_portal')
             env = self.env(user=SUPERUSER_ID)
-            new_user = env['res.users'].with_context(
+            user = env['res.users'].with_context(
                 no_reset_password=True,
             ).create({
                 'name': validation.get('name', email),
@@ -51,6 +53,13 @@ class ResUsers(models.Model):
                 'active': True,
                 'group_ids': [(6, 0, [portal_group.id])],
             })
-            _logger.info("Azure SSO: Portal user created: %s (id=%s)", email, new_user.id)
+            _logger.info("Azure SSO: Portal user created: %s (id=%s)", email, user.id)
+
+        # Always make sure oauth_uid is linked
+        if oauth_uid and not user.oauth_uid:
+            user.sudo().write({
+                'oauth_uid': oauth_uid,
+                'oauth_provider_id': provider,
+            })
 
         return super()._auth_oauth_signin(provider, validation, params)
