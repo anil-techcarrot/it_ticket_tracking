@@ -1,10 +1,29 @@
 from odoo import models, api
+import requests
 import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class ResUsers(models.Model):
     _inherit = 'res.users'
+
+    def _auth_oauth_validate(self, provider, access_token):
+        """Override to use Microsoft Graph API directly"""
+        headers = {'Authorization': f'Bearer {access_token}'}
+        response = requests.get(
+            'https://graph.microsoft.com/v1.0/me',
+            headers=headers
+        )
+        if response.status_code != 200:
+            raise Exception(f"Microsoft Graph error: {response.text}")
+
+        data = response.json()
+        return {
+            'sub': data.get('id'),
+            'email': data.get('mail') or data.get('userPrincipalName'),
+            'name': data.get('displayName'),
+        }
 
     @api.model
     def _auth_oauth_signin(self, provider, validation, params):
