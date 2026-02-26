@@ -17,10 +17,17 @@ class ResUsers(models.Model):
         if response.status_code != 200:
             raise Exception(f"Microsoft Graph error: {response.text}")
         data = response.json()
+
+        user_id = data.get('id')
+        email = data.get('mail') or data.get('userPrincipalName')
+
         return {
-            'sub': data.get('id'),
-            'email': data.get('mail') or data.get('userPrincipalName'),
+            'sub': user_id,
+            'user_id': user_id,  # ← This was missing!
+            'id': user_id,
+            'email': email,
             'name': data.get('displayName'),
+            'login': email,
         }
 
     @api.model
