@@ -34,11 +34,22 @@ class ResUsers(models.Model):
         user = self.sudo().search([('login', '=', email)], limit=1)
         if not user:
             _logger.info("Azure SSO: Creating portal user for %s", email)
-            portal_group = self.env.ref('base.group_portal')
-            self.sudo().create({
+            # Create user without group first
+            new_user = self.sudo().create({
                 'name': validation.get('name', email),
                 'login': email,
                 'email': email,
-                'sel_groups_1_10_11': portal_group.id,
             })
+            # Then assign portal group separately
+            portal_group = self.env.ref('base.group_portal')
+            internal_group = self.env.ref('base.group_user')
+            # Remove internal group and add portal group
+            new_user.sudo().write({
+                'groups_id': [
+                    (3, internal_group.id),
+                    (4, portal_group.id),
+                ]
+            })
+            _logger.info("Azure SSO: Portal user created successfully for %s", email)
+
         return super()._auth_oauth_signin(provider, validation, params)
