@@ -31,32 +31,36 @@ class ResUsers(models.Model):
         if not email:
             raise Exception("Email not provided by Azure AD")
 
-        # Check if user already exists
         user = self.sudo().search([('login', '=', email)], limit=1)
 
         if not user:
             _logger.info("Azure SSO: Creating portal user for %s", email)
-            try:
-                portal_group = self.env.ref('base.group_portal')
 
-                # Use env with SUPERUSER_ID directly
-                env = self.env(user=SUPERUSER_ID)
+            portal_group = self.env.ref('base.group_portal')
+            env = self.env(user=SUPERUSER_ID)
 
-                new_user = env['res.users'].with_context(
-                    no_reset_password=True,
-                    create_user=True
-                ).create({
-                    'name': validation.get('name', email),
-                    'login': email,
-                    'email': email,
-                    'active': True,
-                    'groups_id': [(6, 0, [portal_group.id])],
-                })
+            # Step 1 — Create user using _signup_create_user
+            # which is the safe Odoo 19 way
+            user = env['res.users'].with_context(
+                no_reset_password=True,
+            )._signup_create_user({
+                'name': validation.get('name', email),
+                'login': email,
+                'email': email,
+            })
 
-                _logger.info("Azure SSO: Portal user created: %s (id=%s)", email, new_user.id)
+            # Step 2 — Assign portal group via SQL directly
+            # This bypasses the ORM field name issue entirely
+            env.cr.execute("""
+                DELETE FROM res_groups_users_rel 
+                WHERE uid = %s
+            """, (user.id,))
 
-            except Exception as e:
-                _logger.error("Azure SSO: Failed to create user %s: %s", email, str(e))
-                raise
+            env.cr.execute("""
+                INSERT INTO res_groups_users_rel (uid, gid)
+                VALUES (%s, %s)
+            """, (user.id, portal_group.id))
+
+            _logger.info("Azure SSO: Portal user created: %s", email)
 
         return super()._auth_oauth_signin(provider, validation, params)
