@@ -39,27 +39,25 @@ class ResUsers(models.Model):
             portal_group = self.env.ref('base.group_portal')
             env = self.env(user=SUPERUSER_ID)
 
-            # Step 1 — Create user using _signup_create_user
-            # which is the safe Odoo 19 way
-            user = env['res.users'].with_context(
+            # Step 1 — Create user via raw ORM with context to skip signup check
+            new_user = env['res.users'].with_context(
                 no_reset_password=True,
+                signup_valid=True,
             )._signup_create_user({
                 'name': validation.get('name', email),
                 'login': email,
                 'email': email,
             })
 
-            # Step 2 — Assign portal group via SQL directly
-            # This bypasses the ORM field name issue entirely
-            env.cr.execute("""
-                DELETE FROM res_groups_users_rel 
-                WHERE uid = %s
-            """, (user.id,))
-
-            env.cr.execute("""
-                INSERT INTO res_groups_users_rel (uid, gid)
-                VALUES (%s, %s)
-            """, (user.id, portal_group.id))
+            # Step 2 — Assign portal group via direct SQL
+            env.cr.execute(
+                "DELETE FROM res_groups_users_rel WHERE uid = %s",
+                (new_user.id,)
+            )
+            env.cr.execute(
+                "INSERT INTO res_groups_users_rel (uid, gid) VALUES (%s, %s)",
+                (new_user.id, portal_group.id)
+            )
 
             _logger.info("Azure SSO: Portal user created: %s", email)
 
