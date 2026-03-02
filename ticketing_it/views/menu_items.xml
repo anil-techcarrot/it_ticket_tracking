@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ROOT MENU: points to different actions per role -->
-    <!-- For portal/employee — their own tickets -->
+    <!-- ROOT MENU -->
     <menuitem id="menu_it_tickets_root"
               name="IT Tickets"
               action="action_it_ticket_my"
               sequence="10"/>
 
-    <!-- ALL USERS: My Tickets (tickets they created) -->
+    <!-- ALL USERS: My own created tickets -->
     <menuitem id="menu_it_tickets_my"
               name="My Tickets"
               parent="menu_it_tickets_root"

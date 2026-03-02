@@ -36,51 +36,42 @@
 
                 <header>
 
-                    <!-- Submit: Employee submits their own draft ticket -->
                     <button name="action_submit"
                             string="Submit"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
 
-                    <!-- Line Manager Approve: visible to Line Manager only when pending -->
-                    <!-- NO groups attr — Python enforces who can click -->
                     <button name="action_manager_approve"
                             string="Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'manager_approval'"/>
 
-                    <!-- Reject: visible when ticket is pending any approval -->
                     <button name="action_reject"
                             string="Reject"
                             type="object"
                             class="btn-secondary"
                             invisible="state not in ['manager_approval', 'it_approval']"/>
 
-                    <!-- IT Manager Approve: visible when pending IT -->
-                    <!-- NO groups attr — Python enforces who can click -->
                     <button name="action_it_approve"
                             string="IT Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'it_approval'"/>
 
-                    <!-- IT Technician Start Work -->
                     <button name="action_start_work"
                             string="Start Work"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'assigned'"/>
 
-                    <!-- IT Technician Mark Done -->
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'in_progress'"/>
 
-                    <!-- Status bar -->
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
@@ -138,7 +129,7 @@
         <field name="domain">[('create_uid', '=', uid)]</field>
     </record>
 
-    <!-- LINE MANAGER: Pending approval -->
+    <!-- LINE MANAGER: Pending approval only -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
@@ -149,14 +140,14 @@
         ]</field>
     </record>
 
-    <!-- LINE MANAGER: Team tickets -->
+    <!-- LINE MANAGER: Team tickets they manage -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[
             ('line_manager_id', '=', uid),
-            ('state', 'in', ['draft', 'manager_approval', 'rejected'])
+            ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected'])
         ]</field>
     </record>
 
@@ -182,13 +173,14 @@
         ]</field>
     </record>
 
-    <!-- IT TECHNICIAN: Only assigned tickets -->
+    <!-- IT TECHNICIAN: Only tickets assigned to them -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[
-            ('assigned_to_id', '=', uid)
+            ('assigned_to_id', '=', uid),
+            ('state', 'in', ['assigned', 'in_progress', 'done'])
         ]</field>
     </record>
 
