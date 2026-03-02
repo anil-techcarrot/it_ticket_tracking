@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Root menu points to My Tickets by default for all users -->
+
+    <!-- ROOT MENU: points to different actions per role -->
+    <!-- For portal/employee — their own tickets -->
     <menuitem id="menu_it_tickets_root"
               name="IT Tickets"
               action="action_it_ticket_my"
               sequence="10"/>
 
-    <!-- Every user — their own tickets -->
+    <!-- ALL USERS: My Tickets (tickets they created) -->
     <menuitem id="menu_it_tickets_my"
               name="My Tickets"
               parent="menu_it_tickets_root"
               action="action_it_ticket_my"
               sequence="10"/>
 
-    <!-- Line Manager only -->
+    <!-- LINE MANAGER ONLY -->
     <menuitem id="menu_it_tickets_pending_manager"
               name="Pending My Approval"
               parent="menu_it_tickets_root"
@@ -28,7 +30,7 @@
               groups="ticketing_it.group_line_manager"
               sequence="25"/>
 
-    <!-- IT Manager only -->
+    <!-- IT MANAGER ONLY -->
     <menuitem id="menu_it_tickets_pending_it"
               name="Pending IT Approval"
               parent="menu_it_tickets_root"
@@ -43,7 +45,7 @@
               groups="ticketing_it.group_it_manager"
               sequence="35"/>
 
-    <!-- IT Technician only -->
+    <!-- IT TECHNICIAN ONLY -->
     <menuitem id="menu_it_tickets_assigned_to_me"
               name="My Assigned Tickets"
               parent="menu_it_tickets_root"
@@ -51,11 +53,12 @@
               groups="ticketing_it.group_it_team"
               sequence="40"/>
 
-    <!-- Admin only -->
+    <!-- ADMIN ONLY -->
     <menuitem id="menu_it_tickets_all"
               name="All Tickets"
               parent="menu_it_tickets_root"
               action="action_it_ticket_all"
               groups="base.group_system"
               sequence="5"/>
+
 </odoo>

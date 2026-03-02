@@ -36,14 +36,12 @@
 
                 <header>
 
-                    <!-- Submit: only ticket creator in draft -->
                     <button name="action_submit"
                             string="Submit"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
 
-                    <!-- Line Manager Approve -->
                     <button name="action_manager_approve"
                             string="Approve"
                             type="object"
@@ -51,14 +49,12 @@
                             invisible="state != 'manager_approval'"
                             groups="ticketing_it.group_line_manager"/>
 
-                    <!-- Reject: Line Manager or IT Manager -->
                     <button name="action_reject"
                             string="Reject"
                             type="object"
                             class="btn-secondary"
                             invisible="state not in ['manager_approval', 'it_approval']"/>
 
-                    <!-- IT Manager Approve -->
                     <button name="action_it_approve"
                             string="IT Approve"
                             type="object"
@@ -66,7 +62,6 @@
                             invisible="state != 'it_approval'"
                             groups="ticketing_it.group_it_manager"/>
 
-                    <!-- IT Technician Start Work -->
                     <button name="action_start_work"
                             string="Start Work"
                             type="object"
@@ -74,7 +69,6 @@
                             invisible="state != 'assigned'"
                             groups="ticketing_it.group_it_team"/>
 
-                    <!-- IT Technician Mark Done -->
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
@@ -82,7 +76,6 @@
                             invisible="state != 'in_progress'"
                             groups="ticketing_it.group_it_team"/>
 
-                    <!-- Status bar -->
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
@@ -132,7 +125,7 @@
     <!-- ACTIONS                       -->
     <!-- ============================= -->
 
-    <!-- ALL USERS: Own tickets they created -->
+    <!-- ALL USERS: Own created tickets -->
     <record id="action_it_ticket_my" model="ir.actions.act_window">
         <field name="name">My Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -140,7 +133,7 @@
         <field name="domain">[('create_uid', '=', uid)]</field>
     </record>
 
-    <!-- LINE MANAGER: Only tickets pending their approval -->
+    <!-- LINE MANAGER: Pending approval -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
@@ -162,7 +155,7 @@
         ]</field>
     </record>
 
-    <!-- IT MANAGER: Only tickets at IT approval stage -->
+    <!-- IT MANAGER: Pending IT approval -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
@@ -173,7 +166,7 @@
         ]</field>
     </record>
 
-    <!-- IT MANAGER: All tickets they manage after line manager approved -->
+    <!-- IT MANAGER: All tickets they manage -->
     <record id="action_it_ticket_it_all" model="ir.actions.act_window">
         <field name="name">All IT Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -184,14 +177,14 @@
         ]</field>
     </record>
 
-    <!-- IT TECHNICIAN: Only tickets assigned to them -->
+    <!-- IT TECHNICIAN: Only assigned tickets -->
+    <!-- THIS IS THE KEY FIX — no state filter so assigned tickets always show -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[
-            ('assigned_to_id', '=', uid),
-            ('state', 'in', ['assigned', 'in_progress', 'done'])
+            ('assigned_to_id', '=', uid)
         ]</field>
     </record>
 

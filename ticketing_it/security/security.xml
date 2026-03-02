@@ -2,10 +2,6 @@
 <odoo>
     <data noupdate="0">
 
-        <!-- ===================================================== -->
-        <!-- GROUPS                                                 -->
-        <!-- ===================================================== -->
-
         <record id="group_line_manager" model="res.groups">
             <field name="name">Line Manager</field>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
@@ -21,11 +17,7 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- ===================================================== -->
-        <!-- PORTAL RULE                                            -->
-        <!-- Portal users see ONLY their own tickets               -->
-        <!-- ===================================================== -->
-
+        <!-- PORTAL -->
         <record id="rule_it_ticket_portal" model="ir.rule">
             <field name="name">IT Ticket - Portal Own Tickets</field>
             <field name="model_id" ref="model_it_ticket"/>
@@ -37,13 +29,7 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- ===================================================== -->
-        <!-- GLOBAL RULE - MASTER FILTER                           -->
-        <!-- Applies to ALL internal users                         -->
-        <!-- Each person sees ONLY what is relevant to their role  -->
-        <!-- NOTE: Use &amp; instead of & in XML                   -->
-        <!-- ===================================================== -->
-
+        <!-- GLOBAL MASTER FILTER -->
         <record id="rule_it_ticket_global_internal" model="ir.rule">
             <field name="name">IT Ticket - Global Internal Access</field>
             <field name="model_id" ref="model_it_ticket"/>
@@ -55,8 +41,7 @@
                              ('state', 'in', ['draft', 'manager_approval', 'rejected']),
                     '&amp;', ('it_manager_id', '=', user.id),
                              ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
-                    '&amp;', ('assigned_to_id', '=', user.id),
-                             ('state', 'in', ['assigned', 'in_progress', 'done'])
+                    ('assigned_to_id', '=', user.id)
                 ]
             </field>
             <field name="perm_read" eval="True"/>
@@ -65,10 +50,7 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- ===================================================== -->
-        <!-- ADMIN RULE - Full access override                     -->
-        <!-- ===================================================== -->
-
+        <!-- ADMIN -->
         <record id="rule_it_ticket_admin" model="ir.rule">
             <field name="name">IT Ticket - Admin Full Access</field>
             <field name="model_id" ref="model_it_ticket"/>
