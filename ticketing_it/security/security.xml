@@ -29,7 +29,6 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- GLOBAL RULE WITH STATE FILTERS FOR ALL ROLES -->
         <record id="rule_it_ticket_global" model="ir.rule">
             <field name="name">IT Ticket - Global Access</field>
             <field name="model_id" ref="model_it_ticket"/>
@@ -38,7 +37,7 @@
                 ['|', '|', '|',
                     ('create_uid', '=', user.id),
                     '&amp;', ('line_manager_id', '=', user.id),
-                             ('state', 'in', ['manager_approval', 'rejected']),
+                             ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
                     '&amp;', ('it_manager_id', '=', user.id),
                              ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
                     '&amp;', ('assigned_to_id', '=', user.id),
