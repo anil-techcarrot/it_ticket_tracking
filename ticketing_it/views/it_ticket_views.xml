@@ -36,46 +36,51 @@
 
                 <header>
 
+                    <!-- Submit: Employee submits their own draft ticket -->
                     <button name="action_submit"
                             string="Submit"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
 
+                    <!-- Line Manager Approve: visible to Line Manager only when pending -->
+                    <!-- NO groups attr — Python enforces who can click -->
                     <button name="action_manager_approve"
                             string="Approve"
                             type="object"
                             class="btn-primary"
-                            invisible="state != 'manager_approval'"
-                            groups="ticketing_it.group_line_manager"/>
+                            invisible="state != 'manager_approval'"/>
 
+                    <!-- Reject: visible when ticket is pending any approval -->
                     <button name="action_reject"
                             string="Reject"
                             type="object"
                             class="btn-secondary"
                             invisible="state not in ['manager_approval', 'it_approval']"/>
 
+                    <!-- IT Manager Approve: visible when pending IT -->
+                    <!-- NO groups attr — Python enforces who can click -->
                     <button name="action_it_approve"
                             string="IT Approve"
                             type="object"
                             class="btn-primary"
-                            invisible="state != 'it_approval'"
-                            groups="ticketing_it.group_it_manager"/>
+                            invisible="state != 'it_approval'"/>
 
+                    <!-- IT Technician Start Work -->
                     <button name="action_start_work"
                             string="Start Work"
                             type="object"
                             class="btn-primary"
-                            invisible="state != 'assigned'"
-                            groups="ticketing_it.group_it_team"/>
+                            invisible="state != 'assigned'"/>
 
+                    <!-- IT Technician Mark Done -->
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
                             class="btn-primary"
-                            invisible="state != 'in_progress'"
-                            groups="ticketing_it.group_it_team"/>
+                            invisible="state != 'in_progress'"/>
 
+                    <!-- Status bar -->
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
@@ -144,7 +149,7 @@
         ]</field>
     </record>
 
-    <!-- LINE MANAGER: Team tickets — draft/pending/rejected ONLY -->
+    <!-- LINE MANAGER: Team tickets -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -178,7 +183,6 @@
     </record>
 
     <!-- IT TECHNICIAN: Only assigned tickets -->
-    <!-- THIS IS THE KEY FIX — no state filter so assigned tickets always show -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
