@@ -38,7 +38,16 @@
 
         <!-- ===================================================== -->
         <!-- GLOBAL RULE - MASTER FILTER                           -->
-        <!-- Controls visibility AND write access per role+state   -->
+        <!--                                                       -->
+        <!-- LINE MANAGER sees tickets where they are manager      -->
+        <!-- in ALL states EXCEPT draft (before submit)            -->
+        <!-- This allows them to track tickets they approved       -->
+        <!--                                                       -->
+        <!-- IT MANAGER sees tickets from it_approval onwards      -->
+        <!--                                                       -->
+        <!-- IT TECHNICIAN sees all tickets assigned to them       -->
+        <!--                                                       -->
+        <!-- CREATOR always sees their own tickets                 -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_global_internal" model="ir.rule">
@@ -49,7 +58,7 @@
                 ['|', '|', '|',
                     ('create_uid', '=', user.id),
                     '&amp;', ('line_manager_id', '=', user.id),
-                             ('state', 'in', ['draft', 'manager_approval', 'rejected']),
+                             ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
                     '&amp;', ('it_manager_id', '=', user.id),
                              ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
                     ('assigned_to_id', '=', user.id)
@@ -63,7 +72,7 @@
 
         <!-- ===================================================== -->
         <!-- LINE MANAGER WRITE RULE                               -->
-        <!-- Explicitly grants write on manager_approval tickets   -->
+        <!-- Can only WRITE when ticket is pending their approval  -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_line_manager_write" model="ir.rule">
@@ -72,7 +81,7 @@
             <field name="domain_force">
                 ['&amp;',
                     ('line_manager_id', '=', user.id),
-                    ('state', 'in', ['draft', 'manager_approval', 'rejected'])
+                    ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected'])
                 ]
             </field>
             <field name="groups" eval="[(4, ref('ticketing_it.group_line_manager'))]"/>
@@ -84,7 +93,6 @@
 
         <!-- ===================================================== -->
         <!-- IT MANAGER WRITE RULE                                 -->
-        <!-- Explicitly grants write on it_approval tickets        -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_it_manager_write" model="ir.rule">
@@ -105,7 +113,6 @@
 
         <!-- ===================================================== -->
         <!-- IT TEAM WRITE RULE                                    -->
-        <!-- Explicitly grants write on assigned tickets           -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_it_team_write" model="ir.rule">
