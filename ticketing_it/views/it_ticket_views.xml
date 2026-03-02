@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ============================= -->
-    <!-- LIST VIEW                     -->
-    <!-- ============================= -->
-
     <record id="view_it_ticket_list" model="ir.ui.view">
         <field name="name">it.ticket.list</field>
         <field name="model">it.ticket</field>
@@ -23,61 +19,46 @@
         </field>
     </record>
 
-
-    <!-- ============================= -->
-    <!-- FORM VIEW                     -->
-    <!-- ============================= -->
-
     <record id="view_it_ticket_form" model="ir.ui.view">
         <field name="name">it.ticket.form</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
             <form string="IT Ticket">
-
                 <header>
-
                     <button name="action_submit"
                             string="Submit"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
-
                     <button name="action_manager_approve"
                             string="Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'manager_approval'"/>
-
                     <button name="action_reject"
                             string="Reject"
                             type="object"
                             class="btn-secondary"
                             invisible="state not in ['manager_approval', 'it_approval']"/>
-
                     <button name="action_it_approve"
                             string="IT Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'it_approval'"/>
-
                     <button name="action_start_work"
                             string="Start Work"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'assigned'"/>
-
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'in_progress'"/>
-
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
-
                 </header>
-
                 <sheet>
                     <group>
                         <group>
@@ -94,13 +75,11 @@
                             <field name="assigned_to_id"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Description">
                             <field name="description" widget="html"/>
                         </page>
-                        <page string="Rejection Info"
-                              invisible="state != 'rejected'">
+                        <page string="Rejection Info" invisible="state != 'rejected'">
                             <group>
                                 <field name="rejected_by_id"/>
                                 <field name="rejected_date"/>
@@ -109,19 +88,11 @@
                         </page>
                     </notebook>
                 </sheet>
-
                 <chatter/>
-
             </form>
         </field>
     </record>
 
-
-    <!-- ============================= -->
-    <!-- ACTIONS                       -->
-    <!-- ============================= -->
-
-    <!-- ALL USERS: Own created tickets -->
     <record id="action_it_ticket_my" model="ir.actions.act_window">
         <field name="name">My Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -129,7 +100,7 @@
         <field name="domain">[('create_uid', '=', uid)]</field>
     </record>
 
-    <!-- LINE MANAGER: Pending approval only -->
+    <!-- LINE MANAGER: manager_approval state ONLY -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
@@ -140,18 +111,18 @@
         ]</field>
     </record>
 
-    <!-- LINE MANAGER: Team tickets they manage -->
+    <!-- LINE MANAGER: manager_approval + rejected ONLY, NO it_approval -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[
             ('line_manager_id', '=', uid),
-            ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected'])
+            ('state', 'in', ['manager_approval', 'rejected'])
         ]</field>
     </record>
 
-    <!-- IT MANAGER: Pending IT approval -->
+    <!-- IT MANAGER: it_approval state ONLY -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
@@ -162,7 +133,7 @@
         ]</field>
     </record>
 
-    <!-- IT MANAGER: All tickets they manage -->
+    <!-- IT MANAGER: it_approval onwards ONLY -->
     <record id="action_it_ticket_it_all" model="ir.actions.act_window">
         <field name="name">All IT Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -173,7 +144,7 @@
         ]</field>
     </record>
 
-    <!-- IT TECHNICIAN: Only tickets assigned to them -->
+    <!-- IT TECHNICIAN: assigned to them ONLY -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -184,7 +155,6 @@
         ]</field>
     </record>
 
-    <!-- ADMIN: All tickets -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>

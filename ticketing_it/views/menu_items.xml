@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ROOT MENU -->
     <menuitem id="menu_it_tickets_root"
               name="IT Tickets"
               action="action_it_ticket_my"
               sequence="10"/>
 
-    <!-- ALL USERS: My own created tickets -->
     <menuitem id="menu_it_tickets_my"
               name="My Tickets"
               parent="menu_it_tickets_root"
               action="action_it_ticket_my"
               sequence="10"/>
 
-    <!-- LINE MANAGER ONLY -->
     <menuitem id="menu_it_tickets_pending_manager"
               name="Pending My Approval"
               parent="menu_it_tickets_root"
@@ -29,7 +26,6 @@
               groups="ticketing_it.group_line_manager"
               sequence="25"/>
 
-    <!-- IT MANAGER ONLY -->
     <menuitem id="menu_it_tickets_pending_it"
               name="Pending IT Approval"
               parent="menu_it_tickets_root"
@@ -44,7 +40,6 @@
               groups="ticketing_it.group_it_manager"
               sequence="35"/>
 
-    <!-- IT TECHNICIAN ONLY -->
     <menuitem id="menu_it_tickets_assigned_to_me"
               name="My Assigned Tickets"
               parent="menu_it_tickets_root"
@@ -52,7 +47,6 @@
               groups="ticketing_it.group_it_team"
               sequence="40"/>
 
-    <!-- ADMIN ONLY -->
     <menuitem id="menu_it_tickets_all"
               name="All Tickets"
               parent="menu_it_tickets_root"

@@ -2,10 +2,6 @@
 <odoo>
     <data noupdate="0">
 
-        <!-- ===================================================== -->
-        <!-- GROUPS                                                 -->
-        <!-- ===================================================== -->
-
         <record id="group_line_manager" model="res.groups">
             <field name="name">Line Manager</field>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
@@ -21,10 +17,6 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- ===================================================== -->
-        <!-- PORTAL: own tickets only                              -->
-        <!-- ===================================================== -->
-
         <record id="rule_it_ticket_portal" model="ir.rule">
             <field name="name">IT Ticket - Portal Own Tickets</field>
             <field name="model_id" ref="model_it_ticket"/>
@@ -36,100 +28,23 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- ===================================================== -->
-        <!-- EMPLOYEE (plain internal user, no special group)      -->
-        <!-- Sees ONLY tickets they created                        -->
-        <!-- ===================================================== -->
-
-        <record id="rule_it_ticket_employee" model="ir.rule">
-            <field name="name">IT Ticket - Employee Own Tickets</field>
+        <record id="rule_it_ticket_global" model="ir.rule">
+            <field name="name">IT Ticket - Global Access</field>
             <field name="model_id" ref="model_it_ticket"/>
-            <field name="domain_force">[('create_uid', '=', user.id)]</field>
-            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="False"/>
-        </record>
-
-        <!-- ===================================================== -->
-        <!-- LINE MANAGER                                          -->
-        <!-- Sees ONLY tickets where they are line_manager         -->
-        <!-- AND state is manager_approval or beyond               -->
-        <!-- Does NOT see: draft, it_approval, pending IT manager  -->
-        <!-- ===================================================== -->
-
-        <record id="rule_it_ticket_line_manager" model="ir.rule">
-            <field name="name">IT Ticket - Line Manager Access</field>
-            <field name="model_id" ref="model_it_ticket"/>
+            <field name="global" eval="True"/>
             <field name="domain_force">
-                ['|',
+                ['|', '|', '|',
                     ('create_uid', '=', user.id),
-                    '&amp;',
-                        ('line_manager_id', '=', user.id),
-                        ('state', 'in', ['manager_approval', 'rejected'])
+                    ('line_manager_id', '=', user.id),
+                    ('it_manager_id', '=', user.id),
+                    ('assigned_to_id', '=', user.id)
                 ]
             </field>
-            <field name="groups" eval="[(4, ref('ticketing_it.group_line_manager'))]"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
             <field name="perm_unlink" eval="False"/>
         </record>
-
-        <!-- ===================================================== -->
-        <!-- IT MANAGER                                            -->
-        <!-- Sees ONLY tickets where they are it_manager           -->
-        <!-- AND state is it_approval or beyond                    -->
-        <!-- Does NOT see: draft, manager_approval, pending line   -->
-        <!-- ===================================================== -->
-
-        <record id="rule_it_ticket_it_manager" model="ir.rule">
-            <field name="name">IT Ticket - IT Manager Access</field>
-            <field name="model_id" ref="model_it_ticket"/>
-            <field name="domain_force">
-                ['|',
-                    ('create_uid', '=', user.id),
-                    '&amp;',
-                        ('it_manager_id', '=', user.id),
-                        ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected'])
-                ]
-            </field>
-            <field name="groups" eval="[(4, ref('ticketing_it.group_it_manager'))]"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="False"/>
-        </record>
-
-        <!-- ===================================================== -->
-        <!-- IT TECHNICIAN                                         -->
-        <!-- Sees ONLY tickets assigned to them                    -->
-        <!-- AND state is assigned, in_progress, or done           -->
-        <!-- Does NOT see ANY other tickets                        -->
-        <!-- ===================================================== -->
-
-        <record id="rule_it_ticket_it_team" model="ir.rule">
-            <field name="name">IT Ticket - IT Technician Access</field>
-            <field name="model_id" ref="model_it_ticket"/>
-            <field name="domain_force">
-                ['|',
-                    ('create_uid', '=', user.id),
-                    '&amp;',
-                        ('assigned_to_id', '=', user.id),
-                        ('state', 'in', ['assigned', 'in_progress', 'done'])
-                ]
-            </field>
-            <field name="groups" eval="[(4, ref('ticketing_it.group_it_team'))]"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="False"/>
-        </record>
-
-        <!-- ===================================================== -->
-        <!-- ADMIN: Full access                                    -->
-        <!-- ===================================================== -->
 
         <record id="rule_it_ticket_admin" model="ir.rule">
             <field name="name">IT Ticket - Admin Full Access</field>
