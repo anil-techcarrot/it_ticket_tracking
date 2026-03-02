@@ -2,7 +2,6 @@
 <odoo>
     <data noupdate="0">
 
-        <!-- GROUPS — keep implied_ids, needed for ir.model.access -->
         <record id="group_line_manager" model="res.groups">
             <field name="name">Line Manager</field>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
@@ -18,28 +17,6 @@
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <!-- =============================================
-        HOW ODOO RULES WORK WITH IMPLIED GROUPS:
-
-        Dinesh is in: base.group_user + group_line_manager
-        Odoo combines rules of ALL his groups with AND.
-
-        So we need:
-        - base.group_user rule: allow nothing (0=1)
-          EXCEPT this gets OR'd with group_line_manager rule
-
-        CORRECT APPROACH:
-        - Put NO rule on base.group_user
-        - Put specific rules on each custom group
-        - Odoo will OR rules within same user's groups
-
-        WAIT — that's wrong too. Odoo ANDs rules from
-        different groups.
-
-        THE ONLY CORRECT SOLUTION:
-        Use global rules (no group) that check user context.
-        ============================================= -->
-
         <!-- PORTAL: own tickets only -->
         <record id="rule_it_ticket_portal" model="ir.rule">
             <field name="name">Portal: Own Tickets Only</field>
@@ -52,18 +29,22 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- GLOBAL RULE (no group = applies to ALL internal users)
-             This is the key — it checks the user's role dynamically -->
+        <!-- GLOBAL RULE: applies to ALL internal users
+             Each user only sees tickets relevant to them:
+             - created by them (portal employees)
+             - line_manager_id = them (Dinesh)
+             - it_manager_id = them (Usama)
+             - assigned_to_id = them (Zeeshan) -->
         <record id="rule_it_ticket_global" model="ir.rule">
-            <field name="name">IT Ticket: Role Based Access</field>
+            <field name="name">IT Ticket: Role Based Global Rule</field>
             <field name="model_id" ref="model_it_ticket"/>
             <field name="global" eval="True"/>
             <field name="domain_force">
                 ['|', '|', '|',
-                    ('line_manager_id', '=', user.id),
-                    ('assigned_to_id', '=', user.id),
                     ('create_uid', '=', user.id),
-                    ('it_manager_id', '=', user.id)
+                    ('line_manager_id', '=', user.id),
+                    ('it_manager_id', '=', user.id),
+                    ('assigned_to_id', '=', user.id)
                 ]
             </field>
             <field name="perm_read" eval="True"/>
