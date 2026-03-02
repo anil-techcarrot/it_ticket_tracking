@@ -97,7 +97,7 @@
 
     <!-- ACTIONS -->
 
-    <!-- PORTAL/EMPLOYEE: own tickets -->
+    <!-- MY TICKETS: own tickets -->
     <record id="action_it_ticket_my" model="ir.actions.act_window">
         <field name="name">My Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -106,7 +106,7 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: pending approval -->
+    <!-- LINE MANAGER: pending approval only -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
@@ -115,12 +115,12 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: all team tickets -->
+    <!-- LINE MANAGER: only draft/pending/rejected — NOT IT approval or beyond -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('line_manager_id', '=', uid)]</field>
+        <field name="domain">[('line_manager_id', '=', uid), ('state', 'in', ['draft', 'manager_approval', 'rejected'])]</field>
         <field name="context">{}</field>
     </record>
 

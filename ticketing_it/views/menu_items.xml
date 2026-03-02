@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_it_tickets_root" name="IT Tickets" sequence="10"/>
+    <!-- Root menu points to My Tickets by default for all users -->
+    <menuitem id="menu_it_tickets_root"
+              name="IT Tickets"
+              action="action_it_ticket_my"
+              sequence="10"/>
 
     <!-- Every user — their own tickets -->
     <menuitem id="menu_it_tickets_my"
