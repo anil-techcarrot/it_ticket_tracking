@@ -22,7 +22,7 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- PORTAL RULE                                            -->
+        <!-- PORTAL: own tickets only                              -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_portal" model="ir.rule">
@@ -37,27 +37,21 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- GLOBAL RULE                                            -->
-        <!-- CREATOR: always sees own tickets                       -->
-        <!-- LINE MANAGER: sees from manager_approval onwards      -->
-        <!-- IT MANAGER: sees from it_approval onwards             -->
-        <!-- IT TECHNICIAN: ONLY sees tickets assigned to them     -->
-        <!--   with state filter so unassigned tickets dont show   -->
+        <!-- GLOBAL RULE: Blocks everything by default             -->
+        <!-- Then each group rule below OPENS access               -->
+        <!-- This is the DENY ALL base                             -->
         <!-- ===================================================== -->
 
-        <record id="rule_it_ticket_global_internal" model="ir.rule">
-            <field name="name">IT Ticket - Global Internal Access</field>
+        <record id="rule_it_ticket_global_deny" model="ir.rule">
+            <field name="name">IT Ticket - Global Base Rule</field>
             <field name="model_id" ref="model_it_ticket"/>
             <field name="global" eval="True"/>
             <field name="domain_force">
                 ['|', '|', '|',
                     ('create_uid', '=', user.id),
-                    '&amp;', ('line_manager_id', '=', user.id),
-                             ('state', 'in', ['manager_approval', 'it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
-                    '&amp;', ('it_manager_id', '=', user.id),
-                             ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected']),
-                    '&amp;', ('assigned_to_id', '=', user.id),
-                             ('state', 'in', ['assigned', 'in_progress', 'done'])
+                    ('line_manager_id', '=', user.id),
+                    ('it_manager_id', '=', user.id),
+                    ('assigned_to_id', '=', user.id)
                 ]
             </field>
             <field name="perm_read" eval="True"/>
@@ -67,11 +61,13 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- LINE MANAGER WRITE RULE                               -->
+        <!-- LINE MANAGER RULE                                     -->
+        <!-- READ: manager_approval and beyond                     -->
+        <!-- WRITE: only manager_approval state                    -->
         <!-- ===================================================== -->
 
-        <record id="rule_it_ticket_line_manager_write" model="ir.rule">
-            <field name="name">IT Ticket - Line Manager Write Access</field>
+        <record id="rule_it_ticket_line_manager" model="ir.rule">
+            <field name="name">IT Ticket - Line Manager Access</field>
             <field name="model_id" ref="model_it_ticket"/>
             <field name="domain_force">
                 ['&amp;',
@@ -87,11 +83,12 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- IT MANAGER WRITE RULE                                 -->
+        <!-- IT MANAGER RULE                                       -->
+        <!-- READ + WRITE: it_approval and beyond only             -->
         <!-- ===================================================== -->
 
-        <record id="rule_it_ticket_it_manager_write" model="ir.rule">
-            <field name="name">IT Ticket - IT Manager Write Access</field>
+        <record id="rule_it_ticket_it_manager" model="ir.rule">
+            <field name="name">IT Ticket - IT Manager Access</field>
             <field name="model_id" ref="model_it_ticket"/>
             <field name="domain_force">
                 ['&amp;',
@@ -107,11 +104,13 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- IT TEAM WRITE RULE                                    -->
+        <!-- IT TECHNICIAN RULE                                    -->
+        <!-- READ + WRITE: ONLY assigned/in_progress/done         -->
+        <!-- MUST have assigned_to_id = them                      -->
         <!-- ===================================================== -->
 
-        <record id="rule_it_ticket_it_team_write" model="ir.rule">
-            <field name="name">IT Ticket - IT Team Write Access</field>
+        <record id="rule_it_ticket_it_team" model="ir.rule">
+            <field name="name">IT Ticket - IT Technician Access</field>
             <field name="model_id" ref="model_it_ticket"/>
             <field name="domain_force">
                 ['&amp;',
@@ -127,7 +126,7 @@
         </record>
 
         <!-- ===================================================== -->
-        <!-- ADMIN RULE                                            -->
+        <!-- ADMIN RULE: Full access                               -->
         <!-- ===================================================== -->
 
         <record id="rule_it_ticket_admin" model="ir.rule">
