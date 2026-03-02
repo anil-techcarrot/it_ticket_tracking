@@ -93,6 +93,7 @@
         </field>
     </record>
 
+    <!-- MY TICKETS -->
     <record id="action_it_ticket_my" model="ir.actions.act_window">
         <field name="name">My Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -100,61 +101,47 @@
         <field name="domain">[('create_uid', '=', uid)]</field>
     </record>
 
-    <!-- LINE MANAGER: manager_approval state ONLY -->
+    <!-- LINE MANAGER: pending approval -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[
-            ('line_manager_id', '=', uid),
-            ('state', '=', 'manager_approval')
-        ]</field>
+        <field name="domain">[('line_manager_id', '=', uid), ('state', '=', 'manager_approval')]</field>
     </record>
 
-    <!-- LINE MANAGER: manager_approval + rejected ONLY, NO it_approval -->
+    <!-- LINE MANAGER: team tickets — manager_approval + rejected ONLY -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[
-            ('line_manager_id', '=', uid),
-            ('state', 'in', ['manager_approval', 'rejected'])
-        ]</field>
+        <field name="domain">[('line_manager_id', '=', uid), ('state', 'in', ['manager_approval', 'rejected'])]</field>
     </record>
 
-    <!-- IT MANAGER: it_approval state ONLY -->
+    <!-- IT MANAGER: pending it approval -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[
-            ('it_manager_id', '=', uid),
-            ('state', '=', 'it_approval')
-        ]</field>
+        <field name="domain">[('it_manager_id', '=', uid), ('state', '=', 'it_approval')]</field>
     </record>
 
-    <!-- IT MANAGER: it_approval onwards ONLY -->
+    <!-- IT MANAGER: all their tickets -->
     <record id="action_it_ticket_it_all" model="ir.actions.act_window">
         <field name="name">All IT Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[
-            ('it_manager_id', '=', uid),
-            ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected'])
-        ]</field>
+        <field name="domain">[('it_manager_id', '=', uid), ('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected'])]</field>
     </record>
 
-    <!-- IT TECHNICIAN: assigned to them ONLY -->
+    <!-- IT TECHNICIAN: assigned to them only -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[
-            ('assigned_to_id', '=', uid),
-            ('state', 'in', ['assigned', 'in_progress', 'done'])
-        ]</field>
+        <field name="domain">[('assigned_to_id', '=', uid), ('state', 'in', ['assigned', 'in_progress', 'done'])]</field>
     </record>
 
+    <!-- ADMIN -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>

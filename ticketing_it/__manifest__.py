@@ -21,7 +21,7 @@
         # 'views/portal_templates.xml',
         'data/scheduled_actions.xml',
         'views/menu_items.xml',
-        'wizards/reject_wizard_views.xml',
+        # 'wizards/reject_wizard_views.xml',
     ],
     'installable': True,
     'application': True,
