@@ -57,9 +57,17 @@
                             type="object"
                             class="btn-primary"
                             invisible="state != 'in_progress'"/>
+                    <!-- Statusbar for Line Manager & Normal Users -->
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
+                           statusbar_visible="draft,manager_approval,assigned,in_progress,done"
+                           groups="base.group_user"/>
+
+                    <!-- Statusbar for IT Manager (shows IT approval stage) -->
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"
+                           groups="ticketing_it.group_it_manager"/>
                 </header>
                 <sheet>
                     <group>
@@ -120,7 +128,9 @@
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('line_manager_id', '=', uid), ('state', 'in', ['draft', 'manager_approval', 'rejected'])]</field>
+        <field name="domain">[('line_manager_id', '=', uid), ('state', 'in', ['draft', 'manager_approval',
+            'rejected'])]
+        </field>
         <field name="context">{}</field>
     </record>
 
