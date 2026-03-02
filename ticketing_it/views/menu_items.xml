@@ -2,7 +2,7 @@
 <odoo>
     <menuitem id="menu_it_tickets_root" name="IT Tickets" sequence="10"/>
 
-    <!-- Every internal user — their own tickets -->
+    <!-- Every user — their own tickets -->
     <menuitem id="menu_it_tickets_my"
               name="My Tickets"
               parent="menu_it_tickets_root"

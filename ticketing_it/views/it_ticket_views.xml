@@ -95,11 +95,9 @@
         </field>
     </record>
 
-    <!-- ============================================================
-         ACTIONS
-    ============================================================ -->
+    <!-- ACTIONS -->
 
-    <!-- PORTAL / EMPLOYEE: their own tickets only -->
+    <!-- PORTAL/EMPLOYEE: own tickets -->
     <record id="action_it_ticket_my" model="ir.actions.act_window">
         <field name="name">My Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -108,7 +106,7 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: tickets pending their approval -->
+    <!-- LINE MANAGER: pending approval -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
@@ -117,7 +115,7 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: all their team tickets any state -->
+    <!-- LINE MANAGER: all team tickets -->
     <record id="action_it_ticket_my_team" model="ir.actions.act_window">
         <field name="name">My Team Tickets</field>
         <field name="res_model">it.ticket</field>
@@ -126,7 +124,7 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- IT MANAGER: tickets pending IT approval -->
+    <!-- IT MANAGER: pending IT approval -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
@@ -144,7 +142,7 @@
         <field name="context">{}</field>
     </record>
 
-    <!-- IT TECHNICIAN: tickets assigned to them -->
+    <!-- IT TECHNICIAN: assigned tickets -->
     <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
         <field name="name">My Assigned Tickets</field>
         <field name="res_model">it.ticket</field>
