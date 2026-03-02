@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
@@ -127,15 +129,10 @@ class ITTicket(models.Model):
     rejected_date = fields.Datetime(readonly=True, string='Rejection Date')
 
     # =========================================================
-    # HELPER: GET FROM EMAIL DYNAMICALLY FROM ODOO SETTINGS
+    # HELPER: GET FROM EMAIL
     # =========================================================
 
     def _get_from_email(self):
-        """
-        Get central FROM email from Odoo settings.
-        Admin sets once in Settings → General Settings → Default From Email.
-        Never hardcoded in code.
-        """
         ICP = self.env['ir.config_parameter'].sudo()
         default_from = ICP.get_param('mail.default.from')
         catchall_domain = ICP.get_param('mail.catchall.domain')
@@ -153,27 +150,17 @@ class ITTicket(models.Model):
 
     # =========================================================
     # HELPER: FIND IT MANAGER VIA SQL
-    # Uses raw SQL on res_groups_users_rel table.
-    # This is the ONLY reliable method in all Odoo 17 versions.
-    # groups_id domain search is broken in this Odoo build.
-    # Admin assigns IT Manager in Settings → Users → Groups button.
-    # No names or emails hardcoded anywhere.
     # =========================================================
 
     def _find_it_manager(self):
-
         it_manager_group = self.env.ref(
             'ticketing_it.group_it_manager',
             raise_if_not_found=False
         )
         if not it_manager_group:
-            _logger.error(
-                "IT Manager group 'ticketing_it.group_it_manager' not found. "
-                "Check security/security.xml in your module."
-            )
+            _logger.error("IT Manager group not found.")
             return False
 
-        # Direct SQL — bypasses the broken domain search entirely
         self.env.cr.execute("""
             SELECT ru.id
             FROM res_users ru
@@ -188,17 +175,10 @@ class ITTicket(models.Model):
         row = self.env.cr.fetchone()
         if row:
             user = self.env['res.users'].sudo().browse(row[0])
-            _logger.info(
-                "IT Manager found via SQL: %s | Email: %s",
-                user.name, user.email
-            )
+            _logger.info("IT Manager found: %s | Email: %s", user.name, user.email)
             return user
 
-        _logger.warning(
-            "No IT Manager found in group. "
-            "Go to Settings → Users → [your IT manager user] → "
-            "Groups button → Add 'IT Manager' group."
-        )
+        _logger.warning("No IT Manager found in group.")
         return False
 
     # =========================================================
@@ -206,7 +186,6 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _compute_display_name(self):
-        """Odoo 17+ uses _compute_display_name instead of name_get"""
         for record in self:
             name = record.name or 'New'
             if record.subject:
@@ -219,7 +198,6 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _get_current_employee(self):
-        """Get current user's employee record"""
         return self.env['hr.employee'].search(
             [('user_id', '=', self.env.user.id)],
             limit=1
@@ -231,7 +209,6 @@ class ITTicket(models.Model):
 
     @api.depends('employee_id', 'employee_id.parent_id', 'employee_id.parent_id.user_id')
     def _compute_line_manager(self):
-        """Compute line manager from employee's parent"""
         for rec in self:
             if rec.employee_id and rec.employee_id.parent_id and rec.employee_id.parent_id.user_id:
                 rec.line_manager_id = rec.employee_id.parent_id.user_id
@@ -240,21 +217,16 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
-        """
-        Get IT Manager via SQL — safe for all Odoo 17 versions.
-        groups_id domain search is broken in this Odoo build, so we use SQL.
-        """
         it_manager = self._find_it_manager()
         for rec in self:
             rec.it_manager_id = it_manager if it_manager else False
 
     # =========================================================
-    # CREATE (AUTO-SUBMIT FOR PORTAL USERS)
+    # CREATE
     # =========================================================
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Create ticket and auto-submit for portal users"""
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or 'New'
@@ -271,9 +243,8 @@ class ITTicket(models.Model):
         return records
 
     def action_assign_to_it_team(self):
-        """Assign Hardware tickets directly to IT Team (skip approvals)"""
         for rec in self:
-            rec.write({
+            rec.sudo().write({
                 'state': 'assigned',
                 'submitted_date': fields.Datetime.now(),
             })
@@ -290,27 +261,30 @@ class ITTicket(models.Model):
                     'mail.mail_activity_data_todo',
                     user_id=rec.it_manager_id.id,
                     summary=_('Hardware Ticket - Assign to IT Team: %s') % rec.name,
-                    note=_('Hardware issue reported by %s. Please assign to IT team member.') % rec.employee_id.name
+                    note=_('Hardware issue reported by %s.') % rec.employee_id.name
                 )
 
             rec.message_post(
-                body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
+                body=_("Hardware ticket automatically assigned to IT Team.")
             )
 
     # =========================================================
-    # WORKFLOW METHODS - APPROVE/REJECT
+    # WORKFLOW — ALL WRITE CALLS USE sudo()
+    # This bypasses ir.model.access restrictions while still
+    # enforcing our manual permission checks at top of each method.
     # =========================================================
 
     def action_submit(self):
-        """Submit ticket to line manager for approval"""
         for rec in self:
             if not rec.line_manager_id:
                 raise ValidationError(
                     _("No line manager found for employee: %s") % rec.employee_id.name
                 )
 
-            rec.state = 'manager_approval'
-            rec.submitted_date = fields.Datetime.now()
+            rec.sudo().write({
+                'state': 'manager_approval',
+                'submitted_date': fields.Datetime.now(),
+            })
 
             template = self.env.ref(
                 'ticketing_it.email_template_manager_approval',
@@ -331,20 +305,19 @@ class ITTicket(models.Model):
             )
 
     def action_manager_approve(self):
-        """Line manager approves ticket — sends email to IT manager"""
         for rec in self:
             if self.env.user != rec.line_manager_id:
                 raise UserError(
                     _("Only the line manager (%s) can approve this ticket") % rec.line_manager_id.name
                 )
 
-            rec.state = 'it_approval'
-            rec.manager_approval_date = fields.Datetime.now()
+            rec.sudo().write({
+                'state': 'it_approval',
+                'manager_approval_date': fields.Datetime.now(),
+            })
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            # Always re-fetch IT manager via SQL at approval time
-            # This fixes old tickets where it_manager_id was empty
             if not rec.it_manager_id:
                 it_manager = rec._find_it_manager()
                 if it_manager:
@@ -358,10 +331,8 @@ class ITTicket(models.Model):
                 if template:
                     template.send_mail(rec.id, force_send=True)
                     _logger.info(
-                        "IT approval email sent to %s (%s) for ticket %s",
-                        rec.it_manager_id.name,
-                        rec.it_manager_id.email,
-                        rec.name
+                        "IT approval email sent to %s for ticket %s",
+                        rec.it_manager_id.email, rec.name
                     )
 
                 rec.activity_schedule(
@@ -379,18 +350,18 @@ class ITTicket(models.Model):
                 )
             else:
                 rec.message_post(
-                    body=_("Approved by Line Manager: %s. WARNING: No IT Manager found — "
-                           "please assign a user to the IT Manager group.") % self.env.user.name
+                    body=_("Approved by Line Manager: %s. WARNING: No IT Manager found.") % self.env.user.name
                 )
 
     def action_it_approve(self):
-        """IT manager approves ticket - assigns to IT team"""
         for rec in self:
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 raise UserError(_("Only IT managers can approve this ticket"))
 
-            rec.state = 'assigned'
-            rec.it_approval_date = fields.Datetime.now()
+            rec.sudo().write({
+                'state': 'assigned',
+                'it_approval_date': fields.Datetime.now(),
+            })
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
@@ -406,7 +377,6 @@ class ITTicket(models.Model):
             )
 
     def action_reject(self):
-        """Open wizard to reject ticket with reason."""
         self.ensure_one()
         self._check_reject_access()
 
@@ -420,7 +390,6 @@ class ITTicket(models.Model):
         }
 
     def _check_reject_access(self):
-        """Verify the current user is allowed to reject this ticket."""
         self.ensure_one()
         user = self.env.user
 
@@ -440,7 +409,6 @@ class ITTicket(models.Model):
             )
 
     def do_reject(self, reason):
-        """Actually reject the ticket (called from wizard)."""
         for rec in self:
             rec._check_reject_access()
 
@@ -469,19 +437,21 @@ class ITTicket(models.Model):
     # =========================================================
 
     def action_start_work(self):
-        """IT team starts working on ticket"""
         for rec in self:
-            rec.state = 'in_progress'
-            rec.assigned_to_id = self.env.user
+            rec.sudo().write({
+                'state': 'in_progress',
+                'assigned_to_id': self.env.user.id,
+            })
             rec.message_post(
                 body=_("Work started by %s") % self.env.user.name
             )
 
     def action_done(self):
-        """Mark ticket as done"""
         for rec in self:
-            rec.state = 'done'
-            rec.done_date = fields.Datetime.now()
+            rec.sudo().write({
+                'state': 'done',
+                'done_date': fields.Datetime.now(),
+            })
 
             template = self.env.ref(
                 'ticketing_it.email_template_done',
@@ -495,24 +465,16 @@ class ITTicket(models.Model):
             )
 
     # =========================================================
-    # 24 HOUR MANAGER REMINDER (CALLED BY SCHEDULED ACTION)
+    # 24 HOUR REMINDER
     # =========================================================
 
     def action_send_manager_reminder(self):
-        """
-        Called by scheduled action every 24 hours.
-        Sends reminder email to line manager for pending tickets.
-        FROM email read dynamically from Odoo Settings — never hardcoded.
-        """
         if not self:
             pending_tickets = self.search([('state', '=', 'manager_approval')])
         else:
             pending_tickets = self
 
-        _logger.info(
-            "24hr Reminder: Found %d tickets pending manager approval.",
-            len(pending_tickets)
-        )
+        _logger.info("24hr Reminder: Found %d tickets pending manager approval.", len(pending_tickets))
 
         for ticket in pending_tickets:
             try:
@@ -548,8 +510,7 @@ class ITTicket(models.Model):
                                 <strong>{employee}</strong> is still pending your approval.</p>
                                 <p>Please log in and approve or reject immediately.</p>
                                 <p style="color:grey; font-size:12px;">
-                                    You will receive this reminder every 24 hours
-                                    until you take action.
+                                    You will receive this reminder every 24 hours until you take action.
                                 </p>
                             </div>
                         '''.format(
@@ -572,10 +533,7 @@ class ITTicket(models.Model):
                 )
 
             except Exception as e:
-                _logger.error(
-                    "Failed to send 24hr reminder for ticket %s: %s",
-                    ticket.name, str(e)
-                )
+                _logger.error("Failed to send 24hr reminder for ticket %s: %s", ticket.name, str(e))
                 continue
 
     # =========================================================
@@ -583,7 +541,6 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _compute_access_url(self):
-        """Portal URL for employees to view their tickets"""
         super()._compute_access_url()
         for ticket in self:
             ticket.access_url = '/my/tickets/%s' % ticket.id
