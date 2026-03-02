@@ -20,7 +20,7 @@
         </field>
     </record>
 
-    <!-- FORM VIEW -->
+    <!-- FORM VIEW (unchanged) -->
     <record id="view_it_ticket_form" model="ir.ui.view">
         <field name="name">it.ticket.form</field>
         <field name="model">it.ticket</field>
@@ -32,42 +32,35 @@
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
-
                     <button name="action_manager_approve"
                             string="Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'manager_approval'"/>
-
                     <button name="action_reject"
                             string="Reject"
                             type="object"
                             class="btn-secondary"
                             invisible="state not in ['manager_approval','it_approval']"/>
-
                     <button name="action_it_approve"
                             string="IT Approve"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'it_approval'"/>
-
                     <button name="action_start_work"
                             string="Start Work"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'assigned'"/>
-
                     <button name="action_done"
                             string="Mark Done"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'in_progress'"/>
-
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
                 </header>
-
                 <sheet>
                     <group>
                         <group>
@@ -83,7 +76,6 @@
                             <field name="it_manager_id" readonly="1"/>
                         </group>
                     </group>
-
                     <notebook>
                         <page string="Description" name="description">
                             <field name="description" widget="html"/>
@@ -97,33 +89,75 @@
                         </page>
                     </notebook>
                 </sheet>
-
                 <chatter/>
             </form>
         </field>
     </record>
 
-    <!-- ACTIONS -->
+    <!-- ============================================================
+         ACTIONS — Each role sees ONLY their relevant tickets
+    ============================================================ -->
+
+    <!-- ALL TICKETS: Admin only (no domain filter — sees everything) -->
     <record id="action_it_ticket_all" model="ir.actions.act_window">
         <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="context">{}</field>
+        <!-- No domain: admin sees all -->
     </record>
 
+    <!-- MY TICKETS: Employee sees only tickets they raised -->
+    <record id="action_it_ticket_my" model="ir.actions.act_window">
+        <field name="name">My Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- LINE MANAGER: Sees only tickets where they are the line manager -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','manager_approval')]</field>
+        <field name="domain">[('line_manager_id', '=', uid), ('state', '=', 'manager_approval')]</field>
         <field name="context">{}</field>
     </record>
 
+    <!-- LINE MANAGER: All tickets under them (any state) -->
+    <record id="action_it_ticket_my_team" model="ir.actions.act_window">
+        <field name="name">My Team Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('line_manager_id', '=', uid)]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- IT MANAGER: Sees only tickets pending IT approval or assigned/in-progress -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','it_approval')]</field>
+        <field name="domain">[('it_manager_id', '=', uid), ('state', '=', 'it_approval')]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- IT MANAGER: All tickets assigned to IT (full view for IT manager) -->
+    <record id="action_it_ticket_it_all" model="ir.actions.act_window">
+        <field name="name">All IT Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('it_manager_id', '=', uid)]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- IT TECHNICIAN: Sees only tickets assigned to them -->
+    <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
+        <field name="name">My Assigned Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('assigned_to_id', '=', uid), ('state', 'in', ['assigned', 'in_progress', 'done'])]</field>
         <field name="context">{}</field>
     </record>
 

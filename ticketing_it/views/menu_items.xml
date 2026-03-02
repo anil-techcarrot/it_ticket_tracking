@@ -2,22 +2,56 @@
 <odoo>
     <menuitem id="menu_it_tickets_root" name="IT Tickets" sequence="10"/>
 
-    <menuitem id="menu_it_tickets_all"
-              name="All Tickets"
+    <!-- Every internal user — their own tickets -->
+    <menuitem id="menu_it_tickets_my"
+              name="My Tickets"
               parent="menu_it_tickets_root"
-              action="action_it_ticket_all"
+              action="action_it_ticket_my"
               sequence="10"/>
 
+    <!-- Line Manager only -->
     <menuitem id="menu_it_tickets_pending_manager"
               name="Pending My Approval"
               parent="menu_it_tickets_root"
               action="action_it_ticket_pending_manager"
+              groups="ticketing_it.group_line_manager"
               sequence="20"/>
 
+    <menuitem id="menu_it_tickets_my_team"
+              name="My Team Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_my_team"
+              groups="ticketing_it.group_line_manager"
+              sequence="25"/>
+
+    <!-- IT Manager only -->
     <menuitem id="menu_it_tickets_pending_it"
               name="Pending IT Approval"
               parent="menu_it_tickets_root"
               action="action_it_ticket_pending_it"
               groups="ticketing_it.group_it_manager"
               sequence="30"/>
+
+    <menuitem id="menu_it_tickets_it_all"
+              name="All IT Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_it_all"
+              groups="ticketing_it.group_it_manager"
+              sequence="35"/>
+
+    <!-- IT Technician only -->
+    <menuitem id="menu_it_tickets_assigned_to_me"
+              name="My Assigned Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_assigned_to_me"
+              groups="ticketing_it.group_it_team"
+              sequence="40"/>
+
+    <!-- Admin only -->
+    <menuitem id="menu_it_tickets_all"
+              name="All Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_all"
+              groups="base.group_system"
+              sequence="5"/>
 </odoo>
