@@ -1,91 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- =============================================
-         SECURITY GROUPS
-    ============================================= -->
+    <data noupdate="0">
 
-    <record id="group_line_manager" model="res.groups">
-        <field name="name">Line Manager</field>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-    </record>
+        <!-- =============================================
+             SECURITY GROUPS
+        ============================================= -->
 
-    <record id="group_it_manager" model="res.groups">
-        <field name="name">IT Manager</field>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-    </record>
+        <record id="group_line_manager" model="res.groups">
+            <field name="name">Line Manager</field>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
 
-    <record id="group_it_team" model="res.groups">
-        <field name="name">IT Support Team</field>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-    </record>
+        <record id="group_it_manager" model="res.groups">
+            <field name="name">IT Manager</field>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
 
-    <!-- =============================================
-         RECORD RULES
-    ============================================= -->
+        <record id="group_it_team" model="res.groups">
+            <field name="name">IT Support Team</field>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
 
-    <!-- PORTAL: Employee sees only their own tickets -->
-    <record id="rule_it_ticket_portal" model="ir.rule">
-        <field name="name">Portal: Own Tickets Only</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
-        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="False"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+        <!-- =============================================
+             RECORD RULES
+        ============================================= -->
 
-    <!-- REGULAR EMPLOYEE: Sees only tickets they raised -->
-    <record id="rule_it_ticket_employee" model="ir.rule">
-        <field name="name">Employee: Own Tickets Only</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
-        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+        <!-- PORTAL: sees only their own tickets -->
+        <record id="rule_it_ticket_portal" model="ir.rule">
+            <field name="name">Portal: Own Tickets Only</field>
+            <field name="model_id" ref="model_it_ticket"/>
+            <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
 
-    <!-- LINE MANAGER: Sees own tickets + tickets where they are line manager -->
-    <record id="rule_it_ticket_line_manager" model="ir.rule">
-        <field name="name">Line Manager: Own + Team Tickets</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">
-            ['|',
-                ('employee_id.user_id', '=', user.id),
-                ('line_manager_id', '=', user.id)
-            ]
-        </field>
-        <field name="groups" eval="[(4, ref('group_line_manager'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+        <!-- LINE MANAGER: own tickets + team tickets -->
+        <record id="rule_it_ticket_line_manager" model="ir.rule">
+            <field name="name">Line Manager: Own + Team Tickets</field>
+            <field name="model_id" ref="model_it_ticket"/>
+            <field name="domain_force">
+                ['|',
+                    ('employee_id.user_id', '=', user.id),
+                    ('line_manager_id', '=', user.id)
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('group_line_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
 
-    <!-- IT SUPPORT TECHNICIAN: Sees only tickets assigned to them -->
-    <record id="rule_it_ticket_it_team" model="ir.rule">
-        <field name="name">IT Team: Assigned Tickets Only</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('assigned_to_id', '=', user.id)]</field>
-        <field name="groups" eval="[(4, ref('group_it_team'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+        <!-- IT SUPPORT TECHNICIAN: own + assigned tickets -->
+        <record id="rule_it_ticket_it_team" model="ir.rule">
+            <field name="name">IT Team: Assigned Tickets Only</field>
+            <field name="model_id" ref="model_it_ticket"/>
+            <field name="domain_force">
+                ['|',
+                    ('assigned_to_id', '=', user.id),
+                    ('employee_id.user_id', '=', user.id)
+                ]
+            </field>
+            <field name="groups" eval="[(4, ref('group_it_team'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
 
-    <!-- IT MANAGER: Sees all tickets -->
-    <record id="rule_it_ticket_it_manager" model="ir.rule">
-        <field name="name">IT Manager: All Tickets</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[(4, ref('group_it_manager'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
+        <!-- IT MANAGER: sees all tickets -->
+        <record id="rule_it_ticket_it_manager" model="ir.rule">
+            <field name="name">IT Manager: All Tickets</field>
+            <field name="model_id" ref="model_it_ticket"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_it_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
 
+    </data>
 </odoo>
