@@ -759,11 +759,12 @@ class ITTicket(models.Model):
     # =========================================================
 
     def action_start_work(self):
-        """IT team starts working on ticket"""
         for rec in self:
+            if rec.assigned_to_id != self.env.user:
+                raise UserError(_("This ticket is not assigned to you."))
+
             rec.state = 'in_progress'
-            rec.assigned_to_id = self.env.user
-            rec.message_post(
+            rec.sudo().message_post(
                 body=_("Work started by %s") % self.env.user.name
             )
 
