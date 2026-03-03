@@ -3,3 +3,4 @@
 from . import it_ticket
 from . import hr_employee
 from . import it_ticket_reports
+from .import res_users
