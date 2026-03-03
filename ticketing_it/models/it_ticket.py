@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
@@ -153,10 +155,18 @@ class ITTicket(models.Model):
 
     # =========================================================
     # HELPER: FIND IT MANAGER VIA SQL
+    # Uses raw SQL on res_groups_users_rel table.
+    # This is the ONLY reliable method in all Odoo 17 versions.
+    # groups_id domain search is broken in this Odoo build.
+    # Admin assigns IT Manager in Settings → Users → Groups button.
+    # No names or emails hardcoded anywhere.
     # =========================================================
 
     def _find_it_manager(self):
-
+        """
+        Find IT Manager user via direct SQL on the groups-users relation table.
+        Works in all Odoo 17 versions — avoids the broken groups_id domain search.
+        """
         it_manager_group = self.env.ref(
             'ticketing_it.group_it_manager',
             raise_if_not_found=False
@@ -168,6 +178,7 @@ class ITTicket(models.Model):
             )
             return False
 
+        # Direct SQL — bypasses the broken domain search entirely
         self.env.cr.execute("""
             SELECT ru.id
             FROM res_users ru
@@ -267,8 +278,7 @@ class ITTicket(models.Model):
     def action_assign_to_it_team(self):
         """Assign Hardware tickets directly to IT Team (skip approvals)"""
         for rec in self:
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
+            rec.write({
                 'state': 'assigned',
                 'submitted_date': fields.Datetime.now(),
             })
@@ -304,11 +314,8 @@ class ITTicket(models.Model):
                     _("No line manager found for employee: %s") % rec.employee_id.name
                 )
 
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
-                'state': 'manager_approval',
-                'submitted_date': fields.Datetime.now(),
-            })
+            rec.state = 'manager_approval'
+            rec.submitted_date = fields.Datetime.now()
 
             template = self.env.ref(
                 'ticketing_it.email_template_manager_approval',
@@ -336,11 +343,8 @@ class ITTicket(models.Model):
                     _("Only the line manager (%s) can approve this ticket") % rec.line_manager_id.name
                 )
 
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
-                'state': 'it_approval',
-                'manager_approval_date': fields.Datetime.now(),
-            })
+            rec.state = 'it_approval'
+            rec.manager_approval_date = fields.Datetime.now()
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
@@ -390,11 +394,8 @@ class ITTicket(models.Model):
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 raise UserError(_("Only IT managers can approve this ticket"))
 
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
-                'state': 'assigned',
-                'it_approval_date': fields.Datetime.now(),
-            })
+            rec.state = 'assigned'
+            rec.it_approval_date = fields.Datetime.now()
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
@@ -448,7 +449,6 @@ class ITTicket(models.Model):
         for rec in self:
             rec._check_reject_access()
 
-            # sudo() to bypass write access rules for state transition
             rec.sudo().write({
                 'state': 'rejected',
                 'rejection_reason': reason,
@@ -476,11 +476,8 @@ class ITTicket(models.Model):
     def action_start_work(self):
         """IT team starts working on ticket"""
         for rec in self:
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
-                'state': 'in_progress',
-                'assigned_to_id': self.env.user.id,
-            })
+            rec.state = 'in_progress'
+            rec.assigned_to_id = self.env.user
             rec.message_post(
                 body=_("Work started by %s") % self.env.user.name
             )
@@ -488,11 +485,8 @@ class ITTicket(models.Model):
     def action_done(self):
         """Mark ticket as done"""
         for rec in self:
-            # sudo() to bypass write access rules for state transition
-            rec.sudo().write({
-                'state': 'done',
-                'done_date': fields.Datetime.now(),
-            })
+            rec.state = 'done'
+            rec.done_date = fields.Datetime.now()
 
             template = self.env.ref(
                 'ticketing_it.email_template_done',
