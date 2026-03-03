@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action: Tickets by Time -->
+    <record id="action_ticket_avg_processing" model="ir.actions.act_window">
+        <field name="name">Average Processing Time</field>
+        <field name="res_model">it.ticket.report.processing</field>
+        <field name="view_mode">kanban,form,graph</field>
+        <field name="domain">[('state','in',['done'])]</field>
+        <field name="context">{'group_by': []}</field>
+    </record>
+
+    <!-- Action: Tickets by Category -->
+    <record id="action_ticket_by_type" model="ir.actions.act_window">
+        <field name="name">Tickets by Category</field>
+        <field name="res_model">it.ticket.report.type</field>
+        <field name="view_mode">kanban,form,graph</field>
+        <field name="context">{'group_by': 'ticket_type'}</field>
+    </record>
+
+    <!-- Action: Open Tickets -->
+    <record id="action_open_tickets_support" model="ir.actions.act_window">
+        <field name="name">Open Tickets per IT Support</field>
+        <field name="res_model">it.ticket.report.open</field>
+        <field name="domain">[('state','in',['assigned','in_progress'])]</field>
+        <field name="view_mode">kanban,form,graph</field>
+    </record>
+
+    <!-- Action: Solved Tickets in Month -->
+    <record id="action_solved_tickets_support" model="ir.actions.act_window">
+        <field name="name">Solved Tickets per IT Support</field>
+        <field name="res_model">it.ticket.report.solved</field>
+        <field name="domain">[('state','=','done')]</field>
+        <field name="view_mode">kanban,form,graph</field>
+    </record>
+
+    <!-- Action -->
+    <!--    <record id="action_it_reminder_config" model="ir.actions.act_window">-->
+    <!--        <field name="name">Reminder Configuration</field>-->
+    <!--        <field name="res_model">it.reminder.config.wizard</field>-->
+    <!--        <field name="view_mode">form</field>-->
+    <!--        <field name="target">new</field>-->
+    <!--    </record>-->
+    <record id="action_open_reminder_server" model="ir.actions.server">
+        <field name="name">Reminder Configuration</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = model.open_reminder_wizard()
+        </field>
+    </record>
+    <menuitem id="menu_it_tickets_root" name="IT Helpdesk" sequence="10"/>
+
+    <!-- IT Manager sees ALL tickets -->
+    <menuitem id="menu_it_tickets_all"
+              name="All Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_all"
+              sequence="10"
+              groups="ticketing_it.group_it_manager,ticketing_it.group_it_team"/>
+    <!-- Line Manager sees only THEIR team's tickets -->
+    <menuitem id="menu_it_tickets_my_team"
+              name="My Team's Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_my_approvals"
+              sequence="10"
+              groups="ticketing_it.group_line_manager"/>
+
+<!--     Line Manager: tickets pending their approval-->
+    <menuitem id="menu_it_tickets_pending_manager"
+              name="Pending My Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_manager"
+              sequence="20"
+              groups="ticketing_it.group_line_manager"/>
+
+    <!-- IT Manager only: tickets pending IT approval -->
+    <menuitem id="menu_it_tickets_pending_it"
+              name="Pending IT Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_it"
+              sequence="30"
+              groups="ticketing_it.group_it_manager"/>
+
+    <menuitem id="menu_it_ticket_reports"
+              name="Reports"
+              parent="menu_it_tickets_root"
+              groups="ticketing_it.group_it_manager"
+              sequence="40"/>
+
+    <menuitem id="menu_avg_processing"
+              name="Average Processing Time"
+              parent="menu_it_ticket_reports"
+              action="action_ticket_avg_processing"
+              sequence="10"/>
+
+    <menuitem id="menu_ticket_type"
+              name="Tickets by Type"
+              parent="menu_it_ticket_reports"
+              action="action_ticket_by_type"
+              sequence="20"/>
+
+    <menuitem id="menu_open_support"
+              name="Open Tickets per Support"
+              parent="menu_it_ticket_reports"
+              action="action_open_tickets_support"
+              sequence="30"/>
+
+    <menuitem id="menu_solved_support"
+              name="Solved Tickets per Support"
+              parent="menu_it_ticket_reports"
+              action="action_solved_tickets_support"
+              sequence="20"/>
+
+    <menuitem id="menu_it_tickets_configuration"
+              name="Configuration"
+              parent="menu_it_tickets_root"
+              groups="ticketing_it.group_it_manager"
+              sequence="50"/>
+
+    <menuitem id="menu_it_tickets_configuration_reminders"
+              name="Reminders"
+              parent="menu_it_tickets_configuration"
+              action="action_open_reminder_server"
+              sequence="10"/>
+    <!--    <menuitem id="menu_dashboard"-->
+    <!--              name="Dashboard"-->
+    <!--              parent="menu_it_tickets_root"-->
+    <!--              action="action_it_ticket_dashboard"-->
+    <!--              sequence="60"/>-->
+
+</odoo>

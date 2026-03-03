@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================= KANBAN VIEW ================= -->
+
+    <!--    <record id="view_it_ticket_kanban_by_category" model="ir.ui.view">-->
+    <!--        <field name="name">it.ticket.kanban.by.category</field>-->
+    <!--        <field name="model">it.ticket</field>-->
+    <!--        <field name="arch" type="xml">-->
+    <!--            <kanban default_group_by="ticket_type">-->
+
+    <!--                <field name="ticket_type"/>-->
+    <!--                <field name="name"/>-->
+    <!--                <field name="employee_id"/>-->
+    <!--                <field name="state"/>-->
+
+    <!--                <templates>-->
+    <!--                    <t t-name="card">-->
+    <!--                        <div class="o_kanban_card">-->
+    <!--                            <div class="o_kanban_record_top">-->
+    <!--                                <strong>-->
+    <!--                                    <field name="name"/>-->
+    <!--                                </strong>-->
+    <!--                            </div>-->
+
+    <!--                            <div>-->
+    <!--                                <field name="employee_id"/>-->
+    <!--                            </div>-->
+
+    <!--                            <div>-->
+    <!--                                <field name="state"/>-->
+    <!--                            </div>-->
+    <!--                        </div>-->
+    <!--                    </t>-->
+    <!--                </templates>-->
+
+    <!--            </kanban>-->
+    <!--        </field>-->
+    <!--    </record>-->
+    <!-- List View -->
+<!--    <record id="view_ticket_by_type_list" model="ir.ui.view">-->
+<!--        <field name="name">it.ticket.by.type.list</field>-->
+<!--        <field name="model">it.ticket</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <list string="Tickets by Type">-->
+<!--                <field name="name"/>-->
+<!--                <field name="ticket_type"/>-->
+<!--                <field name="assigned_to_id"/>-->
+<!--                <field name="user_id"/>-->
+<!--                <field name="create_date"/>-->
+<!--            </list>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- Kanban View -->
+    <record id="view_ticket_by_type_kanban" model="ir.ui.view">
+        <field name="name">it.ticket.by.type.kanban</field>
+        <field name="model">it.ticket.report.type</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" default_group_by="ticket_type">
+                <field name="name"/>
+                <field name="ticket_type"/>
+                <field name="assigned_to_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong>
+                                <field name="name"/>
+                            </strong>
+                            <div>Type:
+                                <field name="ticket_type"/>
+                            </div>
+                            <div>Assigned To:
+                                <field name="assigned_to_id"/>
+                            </div>
+                            <div>Priority:
+                                <field name="priority" widget="priority"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <!-- ================= GRAPH VIEW ================= -->
+
+    <record id="view_ticket_by_type_graph" model="ir.ui.view">
+        <field name="name">it.ticket.by.type.graph</field>
+        <field name="model">it.ticket.report.type</field>
+        <field name="arch" type="xml">
+            <graph string="Tickets by Type" type="pie">
+                <field name="ticket_type" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--    <record id="view_it_ticket_kanban_open_by_user" model="ir.ui.view">-->
+    <!--        <field name="name">it.ticket.kanban.open.by.user</field>-->
+    <!--        <field name="model">it.ticket</field>-->
+    <!--        <field name="arch" type="xml">-->
+    <!--            <kanban default_group_by="user_id">-->
+
+    <!--                <field name="name"/>-->
+    <!--                <field name="user_id"/>-->
+    <!--                <field name="state"/>-->
+    <!--                <field name="ticket_type"/>-->
+
+    <!--                <templates>-->
+    <!--                    <t t-name="card">-->
+    <!--                        <div class="o_kanban_card">-->
+    <!--                            <div>-->
+    <!--                                <strong>-->
+    <!--                                    <field name="name"/>-->
+    <!--                                </strong>-->
+    <!--                            </div>-->
+    <!--                            <div>-->
+    <!--                                <field name="ticket_type"/>-->
+    <!--                            </div>-->
+    <!--                            <div>-->
+    <!--                                <field name="state"/>-->
+    <!--                            </div>-->
+    <!--                        </div>-->
+    <!--                    </t>-->
+    <!--                </templates>-->
+
+    <!--            </kanban>-->
+    <!--        </field>-->
+    <!--    </record>-->
+    <!--    <record id="view_it_ticket_graph_open_by_user" model="ir.ui.view">-->
+    <!--        <field name="name">it.ticket.graph.open.by.user</field>-->
+    <!--        <field name="model">it.ticket</field>-->
+    <!--        <field name="arch" type="xml">-->
+    <!--            <graph string="Open Tickets by IT Member" type="bar">-->
+    <!--                <field name="user_id" type="row"/>-->
+    <!--                <field name="id" type="measure"/>-->
+    <!--            </graph>-->
+    <!--        </field>-->
+    <!--    </record>-->
+    <!-- List View -->
+<!--    <record id="view_ticket_open_tickets_support_list" model="ir.ui.view">-->
+<!--        <field name="name">it.ticket.open.tickets.support.list</field>-->
+<!--        <field name="model">it.ticket</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <list string="Open Tickets per IT Support">-->
+<!--                <field name="name"/>-->
+<!--                <field name="assigned_to_id"/>-->
+<!--                <field name="ticket_type"/>-->
+<!--                <field name="state"/>-->
+<!--                <field name="create_date"/>-->
+<!--            </list>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- Kanban View -->
+    <record id="view_ticket_open_tickets_support_kanban" model="ir.ui.view">
+        <field name="name">it.ticket.open.tickets.support.kanban</field>
+        <field name="model">it.ticket.report.open</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" default_group_by="assigned_to_id">
+                <field name="name"/>
+                <field name="assigned_to_id"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong>
+                                <field name="name"/>
+                            </strong>
+                            <div>Assigned To:
+                                <field name="assigned_to_id"/>
+                            </div>
+                            <div>Status:
+                                <field name="state"/>
+                            </div>
+                            <div>Priority:
+                                <field name="priority" widget="priority"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_ticket_open_tickets_support_graph" model="ir.ui.view">
+        <field name="name">it.ticket.open.tickets.support.graph</field>
+        <field name="model">it.ticket.report.open</field>
+        <field name="arch" type="xml">
+            <graph string="Open Tickets per IT Support" type="bar">
+                <field name="assigned_to_id" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+</odoo>

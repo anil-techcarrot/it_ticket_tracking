@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--    <record id="view_it_ticket_solved_kanban" model="ir.ui.view">-->
+    <!--        <field name="name">it.ticket.solved.kanban</field>-->
+    <!--        <field name="model">it.ticket</field>-->
+    <!--        <field name="arch" type="xml">-->
+    <!--            <kanban default_group_by="user_id">-->
+    <!--                <templates>-->
+    <!--                    <t t-name="kanban-box">-->
+    <!--                        <div class="oe_kanban_global_click">-->
+    <!--                            <field name="name"/>-->
+    <!--                            <div>-->
+    <!--                                Assigned To:-->
+    <!--                                <field name="user_id"/>-->
+    <!--                            </div>-->
+    <!--&lt;!&ndash;                            <div>&ndash;&gt;-->
+    <!--&lt;!&ndash;                                Solved On:&ndash;&gt;-->
+    <!--&lt;!&ndash;                                <field name="date_solved"/>&ndash;&gt;-->
+    <!--&lt;!&ndash;                            </div>&ndash;&gt;-->
+    <!--                        </div>-->
+    <!--                    </t>-->
+    <!--                </templates>-->
+    <!--            </kanban>-->
+    <!--        </field>-->
+    <!--    </record>-->
+    <!--    <record id="view_it_ticket_solved_graph" model="ir.ui.view">-->
+    <!--        <field name="name">it.ticket.solved.graph</field>-->
+    <!--        <field name="model">it.ticket</field>-->
+    <!--        <field name="arch" type="xml">-->
+    <!--            <graph string="Solved Tickets by Employee" type="bar">-->
+    <!--                <field name="user_id" type="row"/>-->
+    <!--                <field name="id" type="measure"/>-->
+    <!--            </graph>-->
+    <!--        </field>-->
+    <!--    </record>-->
+    <!-- List View -->
+<!--    <record id="view_ticket_solved_tickets_support_list" model="ir.ui.view">-->
+<!--        <field name="name">it.ticket.solved.tickets.support.list</field>-->
+<!--        <field name="model">it.ticket.report.solved</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <list string="Solved Tickets per IT Support">-->
+<!--                <field name="name"/>-->
+<!--                <field name="assigned_to_id"/>-->
+<!--                <field name="ticket_type"/>-->
+<!--                <field name="state"/>-->
+<!--                <field name="write_date"/>-->
+<!--            </list>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- Kanban View -->
+    <record id="view_ticket_solved_tickets_support_kanban" model="ir.ui.view">
+        <field name="name">it.ticket.solved.tickets.support.kanban</field>
+        <field name="model">it.ticket.report.solved</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" default_group_by="assigned_to_id">
+                <field name="name"/>
+                <field name="assigned_to_id"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong>
+                                <field name="name"/>
+                            </strong>
+                            <div>Assigned To:
+                                <field name="assigned_to_id"/>
+                            </div>
+                            <div>Status:
+                                <field name="state"/>
+                            </div>
+                            <div>Priority:
+                                <field name="priority" widget="priority"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_ticket_solved_tickets_support_graph" model="ir.ui.view">
+        <field name="name">it.ticket.solved.tickets.support.graph</field>
+        <field name="model">it.ticket.report.solved</field>
+        <field name="arch" type="xml">
+            <graph string="Solved Tickets per IT Support" type="bar">
+                <field name="assigned_to_id" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+</odoo>
