@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- LIST VIEW -->
+    <!--  LIST VIEW  -->
     <record id="view_it_ticket_tree" model="ir.ui.view">
         <field name="name">it.ticket.tree</field>
         <field name="model">it.ticket</field>
@@ -11,54 +9,33 @@
                 <field name="employee_id"/>
                 <field name="ticket_type"/>
                 <field name="priority" widget="priority"/>
-                <field name="state"
-                       decoration-success="state=='done'"
-                       decoration-danger="state=='rejected'"
+                <field name="state" decoration-success="state=='done'" decoration-danger="state=='rejected'"
                        decoration-warning="state in ['manager_approval','it_approval']"/>
                 <field name="create_date"/>
             </list>
         </field>
     </record>
 
-    <!-- FORM VIEW -->
+    <!--  FORM VIEW  -->
     <record id="view_it_ticket_form" model="ir.ui.view">
         <field name="name">it.ticket.form</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
             <form string="IT Ticket">
                 <header>
-                    <button name="action_submit"
-                            string="Submit"
-                            type="object"
-                            class="btn-primary"
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary"
                             invisible="state != 'draft'"/>
-                    <button name="action_manager_approve"
-                            string="Approve"
-                            type="object"
-                            class="btn-primary"
+                    <button name="action_manager_approve" string="Approve" type="object" class="btn-primary"
                             invisible="state != 'manager_approval'"/>
-                    <button name="action_reject"
-                            string="Reject"
-                            type="object"
-                            class="btn-secondary"
+                    <button name="action_reject" string="Reject" type="object" class="btn-secondary"
                             invisible="state not in ['manager_approval','it_approval']"/>
-                    <button name="action_it_approve"
-                            string="IT Approve"
-                            type="object"
-                            class="btn-primary"
+                    <button name="action_it_approve" string="IT Approve" type="object" class="btn-primary"
                             invisible="state != 'it_approval'"/>
-                    <button name="action_start_work"
-                            string="Start Work"
-                            type="object"
-                            class="btn-primary"
+                    <button name="action_start_work" string="Start Work" type="object" class="btn-primary"
                             invisible="state != 'assigned'"/>
-                    <button name="action_done"
-                            string="Mark Done"
-                            type="object"
-                            class="btn-primary"
+                    <button name="action_done" string="Mark Done" type="object" class="btn-primary"
                             invisible="state != 'in_progress'"/>
-                    <field name="state"
-                           widget="statusbar"
+                    <field name="state" widget="statusbar"
                            statusbar_visible="draft,manager_approval,it_approval,assigned,in_progress,done"/>
                 </header>
                 <sheet>
@@ -80,8 +57,7 @@
                         <page string="Description" name="description">
                             <field name="description" widget="html"/>
                         </page>
-                        <page string="Rejection Info" name="rejection"
-                              invisible="state != 'rejected'">
+                        <page string="Rejection Info" name="rejection" invisible="state != 'rejected'">
                             <group>
                                 <field name="rejected_by_id"/>
                                 <field name="rejected_date"/>
@@ -95,68 +71,40 @@
         </field>
     </record>
 
-    <!-- ACTIONS -->
+    <!--  ACTIONS  -->
 
-    <!-- MY TICKETS: own tickets -->
-    <record id="action_it_ticket_my" model="ir.actions.act_window">
-        <field name="name">My Tickets</field>
+    <!-- IT Manager: sees ALL tickets -->
+    <record id="action_it_ticket_all" model="ir.actions.act_window">
+        <field name="name">All Tickets</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('create_uid', '=', uid)]</field>
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: pending approval only -->
+    <!-- Line Manager: sees only tickets where they are the line manager -->
+    <record id="action_it_ticket_my_team" model="ir.actions.act_window">
+        <field name="name">My Team's Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('line_manager_id', '=', uid)]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Line Manager: only tickets pending THEIR approval -->
     <record id="action_it_ticket_pending_manager" model="ir.actions.act_window">
         <field name="name">Pending My Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('line_manager_id', '=', uid), ('state', '=', 'manager_approval')]</field>
+        <field name="domain">[('state', '=', 'manager_approval'), ('line_manager_id', '=', uid)]</field>
         <field name="context">{}</field>
     </record>
 
-    <!-- LINE MANAGER: only draft/pending/rejected — NOT IT approval or beyond -->
-    <record id="action_it_ticket_my_team" model="ir.actions.act_window">
-        <field name="name">My Team Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('line_manager_id', '=', uid), ('state', 'in', ['draft', 'manager_approval', 'rejected'])]</field>
-        <field name="context">{}</field>
-    </record>
-
-    <!-- IT MANAGER: pending IT approval -->
+    <!-- IT Manager: tickets pending IT approval -->
     <record id="action_it_ticket_pending_it" model="ir.actions.act_window">
         <field name="name">Pending IT Approval</field>
         <field name="res_model">it.ticket</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', '=', 'it_approval')]</field>
-        <field name="context">{}</field>
-    </record>
-
-    <!-- IT MANAGER: all tickets -->
-    <record id="action_it_ticket_it_all" model="ir.actions.act_window">
-        <field name="name">All IT Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[]</field>
-        <field name="context">{}</field>
-    </record>
-
-    <!-- IT TECHNICIAN: assigned tickets -->
-    <record id="action_it_ticket_assigned_to_me" model="ir.actions.act_window">
-        <field name="name">My Assigned Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('assigned_to_id', '=', uid)]</field>
-        <field name="context">{}</field>
-    </record>
-
-    <!-- ADMIN: all tickets -->
-    <record id="action_it_ticket_all" model="ir.actions.act_window">
-        <field name="name">All Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[]</field>
         <field name="context">{}</field>
     </record>
 

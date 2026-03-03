@@ -1,61 +1,36 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Root menu points to My Tickets by default for all users -->
-    <menuitem id="menu_it_tickets_root"
-              name="IT Tickets"
-              action="action_it_ticket_my"
-              sequence="10"/>
+    <menuitem id="menu_it_tickets_root" name="IT Tickets" sequence="10"/>
 
-    <!-- Every user — their own tickets -->
-    <menuitem id="menu_it_tickets_my"
-              name="My Tickets"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_my"
-              sequence="10"/>
-
-    <!-- Line Manager only -->
-    <menuitem id="menu_it_tickets_pending_manager"
-              name="Pending My Approval"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_pending_manager"
-              groups="ticketing_it.group_line_manager"
-              sequence="20"/>
-
-    <menuitem id="menu_it_tickets_my_team"
-              name="My Team Tickets"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_my_team"
-              groups="ticketing_it.group_line_manager"
-              sequence="25"/>
-
-    <!-- IT Manager only -->
-    <menuitem id="menu_it_tickets_pending_it"
-              name="Pending IT Approval"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_pending_it"
-              groups="ticketing_it.group_it_manager"
-              sequence="30"/>
-
-    <menuitem id="menu_it_tickets_it_all"
-              name="All IT Tickets"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_it_all"
-              groups="ticketing_it.group_it_manager"
-              sequence="35"/>
-
-    <!-- IT Technician only -->
-    <menuitem id="menu_it_tickets_assigned_to_me"
-              name="My Assigned Tickets"
-              parent="menu_it_tickets_root"
-              action="action_it_ticket_assigned_to_me"
-              groups="ticketing_it.group_it_team"
-              sequence="40"/>
-
-    <!-- Admin only -->
+    <!-- IT Manager only: sees ALL tickets -->
     <menuitem id="menu_it_tickets_all"
               name="All Tickets"
               parent="menu_it_tickets_root"
               action="action_it_ticket_all"
-              groups="base.group_system"
-              sequence="5"/>
+              sequence="10"
+              groups="ticketing_it.group_it_manager"/>
+
+    <!-- Line Manager (internal user): sees only their team's tickets -->
+    <menuitem id="menu_it_tickets_my_team"
+              name="My Team's Tickets"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_my_team"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <!-- Line Manager: tickets waiting for their approval -->
+    <menuitem id="menu_it_tickets_pending_manager"
+              name="Pending My Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_manager"
+              sequence="20"
+              groups="base.group_user"/>
+
+    <!-- IT Manager only: tickets waiting for IT approval -->
+    <menuitem id="menu_it_tickets_pending_it"
+              name="Pending IT Approval"
+              parent="menu_it_tickets_root"
+              action="action_it_ticket_pending_it"
+              sequence="30"
+              groups="ticketing_it.group_it_manager"/>
+
 </odoo>
