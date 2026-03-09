@@ -950,39 +950,32 @@ class ITTicket(models.Model):
             return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
 
         # ── IT Manager ─────────────────────────────────────────────────
-        # Sees ONLY tickets that physically reached IT stage
-        # (it_approval_date is set = ticket passed line manager)
-        # Rejected by line manager → it_approval_date is NULL → hidden
         if user.has_group('ticketing_it.group_it_manager'):
-            it_domain = [
-                ('it_approval_date', '!=', False),  # only tickets that reached IT stage
-            ]
+            it_domain = [('it_approval_date', '!=', False)]
             return super()._search(domain + it_domain, offset=offset, limit=limit, order=order, **kwargs)
 
         # ── IT Team ────────────────────────────────────────────────────
-        # Sees ONLY tickets assigned to them
         if user.has_group('ticketing_it.group_it_team'):
             it_team_domain = [('assigned_to_id', '=', user.id)]
             return super()._search(domain + it_team_domain, offset=offset, limit=limit, order=order, **kwargs)
 
         # ── Line Manager ───────────────────────────────────────────────
-        # Sees ONLY tickets of their direct reports
-        # that have NOT yet passed to IT stage
-        # (manager_approval_date set but it_approval_date is NULL)
         employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
         managed_employees = self.env['hr.employee'].search([('parent_id', '=', employee.id)])
 
         if managed_employees:
+            # Team tickets not yet passed to IT + own tickets
+            team_ids = managed_employees.ids
             line_manager_domain = [
-                ('employee_id', 'in', managed_employees.ids),
-                ('it_approval_date', '=', False),  # not yet passed to IT manager
+                '|',
+                # Their team tickets that have NOT reached IT stage yet
+                '&', ('employee_id', 'in', team_ids), ('it_approval_date', '=', False),
+                # Their own personal tickets always
+                ('employee_id.user_id', '=', user.id),
             ]
-            own_tickets_domain = [('employee_id.user_id', '=', user.id)]
-            combined_domain = ['|'] + line_manager_domain + own_tickets_domain
-            return super()._search(domain + combined_domain, offset=offset, limit=limit, order=order, **kwargs)
+            return super()._search(domain + line_manager_domain, offset=offset, limit=limit, order=order, **kwargs)
 
         # ── Regular Employee ───────────────────────────────────────────
-        # Sees ONLY their own tickets
         return super()._search(
             domain + [('employee_id.user_id', '=', user.id)],
             offset=offset, limit=limit, order=order, **kwargs
