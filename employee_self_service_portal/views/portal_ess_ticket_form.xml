@@ -345,34 +345,36 @@
 
 
                 <!-- Filter Bar -->
+                <!-- Filter Bar -->
                 <style>
                     .tc-filter-btn {
-                    padding: 12px 24px !important;
-                    font-size: 15px !important;
-                    font-weight: 600 !important;
+                    padding: 16px 32px !important;
+                    font-size: 17px !important;
+                    font-weight: 700 !important;
                     border-radius: 8px !important;
-                    border: 2px solid #1B2A4A !important;
-                    background-color: white !important;
-                    color: #1B2A4A !important;
+                    border: none !important;
+                    background-color: #E8450A !important;
+                    color: white !important;
                     text-decoration: none !important;
                     margin: 4px !important;
                     display: inline-block !important;
                     transition: all 0.2s ease !important;
+                    letter-spacing: 0.3px !important;
                     }
                     .tc-filter-btn:hover {
-                    background-color: #2A9D8F !important;
-                    border-color: #2A9D8F !important;
+                    background-color: #2D6A4F !important;
                     color: white !important;
+                    transform: translateY(-1px) !important;
                     }
                     .tc-filter-btn.tc-active {
-                    background-color: #1B2A4A !important;
-                    border-color: #1B2A4A !important;
+                    background-color: #2D6A4F !important;
                     color: white !important;
+                    box-shadow: 0 4px 12px rgba(45, 106, 79, 0.4) !important;
                     }
                 </style>
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body py-3">
-                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                    <div class="card-body py-4">
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
                             <t t-foreach="searchbar_filters.items()" t-as="filter_item">
                                 <t t-set="filter_key" t-value="filter_item[0]"/>
                                 <t t-set="filter_val" t-value="filter_item[1]"/>
