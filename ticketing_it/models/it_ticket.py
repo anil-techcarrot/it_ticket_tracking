@@ -941,45 +941,7 @@ class ITTicket(models.Model):
             'target': 'new',
         }
 
-    @api.model
-    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
-        user = self.env.user
 
-        # ── Admins see everything ──────────────────────────────────────
-        if user.has_group('base.group_system') or user.has_group('hr.group_hr_manager'):
-            return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
-
-        # ── IT Manager ─────────────────────────────────────────────────
-        if user.has_group('ticketing_it.group_it_manager'):
-            it_domain = [('it_approval_date', '!=', False)]
-            return super()._search(domain + it_domain, offset=offset, limit=limit, order=order, **kwargs)
-
-        # ── IT Team ────────────────────────────────────────────────────
-        if user.has_group('ticketing_it.group_it_team'):
-            it_team_domain = [('assigned_to_id', '=', user.id)]
-            return super()._search(domain + it_team_domain, offset=offset, limit=limit, order=order, **kwargs)
-
-        # ── Line Manager ───────────────────────────────────────────────
-        employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-        managed_employees = self.env['hr.employee'].search([('parent_id', '=', employee.id)])
-
-        if managed_employees:
-            # Team tickets not yet passed to IT + own tickets
-            team_ids = managed_employees.ids
-            line_manager_domain = [
-                '|',
-                # Their team tickets that have NOT reached IT stage yet
-                '&', ('employee_id', 'in', team_ids), ('it_approval_date', '=', False),
-                # Their own personal tickets always
-                ('employee_id.user_id', '=', user.id),
-            ]
-            return super()._search(domain + line_manager_domain, offset=offset, limit=limit, order=order, **kwargs)
-
-        # ── Regular Employee ───────────────────────────────────────────
-        return super()._search(
-            domain + [('employee_id.user_id', '=', user.id)],
-            offset=offset, limit=limit, order=order, **kwargs
-        )
 
     def action_send_dynamic_reminder(self):
         _logger.info("===== CRON STARTED: IT Ticket Reminder =====")
