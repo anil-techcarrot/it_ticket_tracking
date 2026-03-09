@@ -941,49 +941,7 @@ class ITTicket(models.Model):
             'target': 'new',
         }
 
-    @api.model
-    def _search(self, domain, offset=0, limit=None, order=None):
-        """
-        Filter tickets based on who is logged in:
-        - Employee: sees only their own tickets
-        - Line Manager: sees only tickets where they are the line manager
-        - IT Manager: sees only tickets in it_approval, assigned, in_progress, done, rejected by IT
-        - IT Team: sees only tickets assigned to them
-        - Odoo Admin / HR Manager: sees all tickets
-        """
-        user = self.env.user
 
-        # Admins and HR managers see everything
-        if user.has_group('base.group_system') or user.has_group('hr.group_hr_manager'):
-            return super()._search(domain, offset=offset, limit=limit, order=order)
-
-        # IT Manager — only sees tickets from it_approval onwards
-        if user.has_group('ticketing_it.group_it_manager'):
-            it_domain = [('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected'])]
-            return super()._search(domain + it_domain, offset=offset, limit=limit, order=order)
-
-        # IT Team member — only sees tickets assigned to them
-        if user.has_group('ticketing_it.group_it_team'):
-            it_team_domain = [('assigned_to_id', '=', user.id)]
-            return super()._search(domain + it_team_domain, offset=offset, limit=limit, order=order)
-
-        # Line Manager — only sees tickets where they are the line manager
-        employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-        managed_employees = self.env['hr.employee'].search([('parent_id', '=', employee.id)])
-
-        if managed_employees:
-            line_manager_domain = [
-                '|',
-                ('employee_id', 'in', managed_employees.ids),  # tickets from their team
-                ('employee_id.user_id', '=', user.id),  # their own tickets
-            ]
-            return super()._search(domain + line_manager_domain, offset=offset, limit=limit, order=order)
-
-        # Regular Employee — only sees their own tickets
-        return super()._search(
-            domain + [('employee_id.user_id', '=', user.id)],
-            offset=offset, limit=limit, order=order
-        )
 
 
 
