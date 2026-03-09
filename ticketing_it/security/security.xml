@@ -13,9 +13,9 @@
         <field name="name">Line Manager</field>
     </record>
 
-    <!-- Record Rules -->
-
-    <!-- Portal users see only their tickets -->
+    <!-- ================================================ -->
+    <!-- PORTAL/EMPLOYEE: sees only their own tickets     -->
+    <!-- ================================================ -->
     <record id="rule_it_ticket_portal" model="ir.rule">
         <field name="name">Portal: Own Tickets Only</field>
         <field name="model_id" ref="model_it_ticket"/>
@@ -27,61 +27,57 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- Internal users see all tickets -->
-    <!--    <record id="rule_it_ticket_user" model="ir.rule">-->
-    <!--        <field name="name">Internal User: All Tickets</field>-->
-    <!--        <field name="model_id" ref="model_it_ticket"/>-->
-    <!--        <field name="domain_force">[(1, '=', 1)]</field>-->
-    <!--        <field name="groups" eval="[(4, ref('base.group_user'))]"/>-->
-    <!--        <field name="perm_read" eval="True"/>-->
-    <!--        <field name="perm_write" eval="True"/>-->
-    <!--        <field name="perm_create" eval="True"/>-->
-    <!--        <field name="perm_unlink" eval="False"/>-->
-    <!--    </record>-->
-
-    <!-- IT Team sees all tickets with full access -->
-    <record id="rule_it_ticket_it_team" model="ir.rule">
-        <field name="name">IT Team: Full Access</field>
+    <!-- ================================================ -->
+    <!-- LINE MANAGER:                                    -->
+    <!-- sees their team tickets at ALL stages always     -->
+    <!-- ================================================ -->
+    <record id="rule_it_ticket_line_manager" model="ir.rule">
+        <field name="name">Line Manager: See team tickets at all stages</field>
         <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('state','not in',['draft', 'manager_approval', 'it_approval','rejected'])]</field>
-        <field name="groups" eval="[(4, ref('group_it_team'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- IT Manager sees all tickets with full access -->
-    <!--    <record id="rule_it_ticket_it_manager" model="ir.rule">-->
-    <!--        <field name="name">IT Manager: Full Access</field>-->
-    <!--        <field name="model_id" ref="model_it_ticket"/>-->
-    <!--        <field name="domain_force">[(1, '=', 1)]</field>-->
-    <!--        <field name="groups" eval="[(4, ref('group_it_manager'))]"/>-->
-    <!--        <field name="perm_read" eval="True"/>-->
-    <!--        <field name="perm_write" eval="True"/>-->
-    <!--        <field name="perm_create" eval="False"/>-->
-    <!--        <field name="perm_unlink" eval="True"/>-->
-    <!--    </record>-->
-    <!-- IT Manager sees only tickets after manager approval -->
-    <record id="rule_it_ticket_it_manager" model="ir.rule">
-        <field name="name">IT Manager: Only visible tickets</field>
-        <field name="model_id" ref="model_it_ticket"/>
-        <field name="groups" eval="[(4, ref('group_it_manager'))]"/>
         <field name="domain_force">
-            [('show_it_manager', '=', 'True')]
+            [('employee_id.parent_id.user_id', '=', user.id)]
         </field>
+        <field name="groups" eval="[(4, ref('ticketing_it.group_line_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ================================================ -->
+    <!-- IT MANAGER:                                      -->
+    <!-- sees tickets ONLY after line manager approves    -->
+    <!-- (it_approval_date is set)                        -->
+    <!-- Line manager rejected = it_approval_date = NULL  -->
+    <!-- = IT Manager NEVER sees those tickets            -->
+    <!-- ================================================ -->
+    <record id="rule_it_ticket_it_manager" model="ir.rule">
+        <field name="name">IT Manager: Only tickets past line manager stage</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="domain_force">[('it_approval_date', '!=', False)]</field>
+        <field name="groups" eval="[(4, ref('ticketing_it.group_it_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="False"/>
         <field name="perm_unlink" eval="True"/>
     </record>
-    <!--    <record id="rule_it_ticket_line_manager" model="ir.rule">-->
-    <!--        <field name="name">Line Manager: Only visible tickets</field>-->
-    <!--        <field name="model_id" ref="model_it_ticket"/>-->
-    <!--        <field name="domain_force">[('line_manager_user_id','=',user.id)]</field>-->
-    <!--        <field name="perm_read" eval="True"/>-->
-    <!--        <field name="perm_write" eval="True"/>-->
-    <!--        <field name="perm_create" eval="False"/>-->
-    <!--        <field name="perm_unlink" eval="False"/>-->
-    <!--    </record>-->
+
+    <!-- ================================================ -->
+    <!-- IT TEAM:                                         -->
+    <!-- ONLY sees tickets assigned to them               -->
+    <!-- ================================================ -->
+    <record id="rule_it_ticket_it_team" model="ir.rule">
+        <field name="name">IT Team: Only assigned tickets</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="domain_force">
+            [('assigned_to_id', '=', user.id),
+             ('state', 'in', ['assigned', 'in_progress', 'done'])]
+        </field>
+        <field name="groups" eval="[(4, ref('ticketing_it.group_it_team'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
 </odoo>
