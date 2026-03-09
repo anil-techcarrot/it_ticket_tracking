@@ -943,8 +943,36 @@ class ITTicket(models.Model):
 
 
 
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
+        user = self.env.user
 
+        if user.has_group('base.group_system') or user.has_group('hr.group_hr_manager'):
+            return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
 
+        if user.has_group('ticketing_it.group_it_manager'):
+            it_domain = [('state', 'in', ['it_approval', 'assigned', 'in_progress', 'done', 'rejected'])]
+            return super()._search(domain + it_domain, offset=offset, limit=limit, order=order, **kwargs)
+
+        if user.has_group('ticketing_it.group_it_team'):
+            it_team_domain = [('assigned_to_id', '=', user.id)]
+            return super()._search(domain + it_team_domain, offset=offset, limit=limit, order=order, **kwargs)
+
+        employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        managed_employees = self.env['hr.employee'].search([('parent_id', '=', employee.id)])
+
+        if managed_employees:
+            line_manager_domain = [
+                '|',
+                ('employee_id', 'in', managed_employees.ids),
+                ('employee_id.user_id', '=', user.id),
+            ]
+            return super()._search(domain + line_manager_domain, offset=offset, limit=limit, order=order, **kwargs)
+
+        return super()._search(
+            domain + [('employee_id.user_id', '=', user.id)],
+            offset=offset, limit=limit, order=order, **kwargs
+        )
 
     def action_send_dynamic_reminder(self):
         _logger.info("===== CRON STARTED: IT Ticket Reminder =====")
