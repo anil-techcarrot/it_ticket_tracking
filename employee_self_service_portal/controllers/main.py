@@ -1011,11 +1011,20 @@ class PortalEmployee(http.Controller):
         if not ticket:
             return request.redirect('/my/tickets')
 
+        attachments = request.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'it.ticket'),
+            ('res_id', '=', ticket.id)
+        ])
+
         values = {
             'ticket': ticket,
             'page_name': 'tickets',
+            'ticket_attachments': attachments,
             'employee': employee,
         }
+
+
+
 
         return request.render('employee_self_service_portal.portal_my_ticket_detail', values)
 

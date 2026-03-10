@@ -613,11 +613,11 @@
                                             <t t-raw="ticket.description"/>
                                         </div>
                                     </div>
-                                    <t t-if="ticket.attachment_ids">
+                                    <t t-if="ticket.attachments">
                                         <div class="col-12 mt-3">
                                             <label class="text-muted small">Attachments</label>
                                             <ul class="list-group">
-                                                <t t-foreach="ticket.attachment_ids" t-as="att">
+                                                <t t-foreach="ticket.attachments" t-as="att">
                                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                                         <span>
                                                             <i class="fa fa-paperclip me-2"></i>
