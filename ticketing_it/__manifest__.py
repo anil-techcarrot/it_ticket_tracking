@@ -10,6 +10,7 @@
         'hr',
         'mail',
         'portal',
+        'board',
         'web',
     ],
     'data': [
