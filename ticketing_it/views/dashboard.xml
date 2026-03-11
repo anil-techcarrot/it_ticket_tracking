@@ -1,22 +1,6 @@
 <odoo>
-        <!-- Actions with Domain Filters -->
-    <record id="action_helpdesk_open_ticket_graph" model="ir.actions.act_window">
-        <field name="name">Open Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">graph</field>
-        <field name="view_id" ref="view_it_ticket_graph_open"/>
-        <field name="domain">[('state','in',['draft','manager_approval','it_approval','assigned','in_progress'])]
-        </field>
-    </record>
 
-    <record id="action_helpdesk_closed_ticket_graph" model="ir.actions.act_window">
-        <field name="name">Closed Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">graph</field>
-        <field name="view_id" ref="view_it_ticket_graph_closed"/>
-        <field name="domain">[('state','in',['done','rejected'])]</field>
-    </record>
-    <!-- Open Tickets Graph -->
+    <!-- Open Tickets Graph View (must be defined BEFORE the action that refs it) -->
     <record id="view_it_ticket_graph_open" model="ir.ui.view">
         <field name="name">it.ticket.graph.open</field>
         <field name="model">it.ticket</field>
@@ -27,7 +11,9 @@
             </graph>
         </field>
     </record>
-    <record id="view_helpdesk_ticket_graph_closed" model="ir.ui.view">
+
+    <!-- Closed Tickets Graph View (must be defined BEFORE the action that refs it) -->
+    <record id="view_it_ticket_graph_closed" model="ir.ui.view">
         <field name="name">it.ticket.graph.closed</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
@@ -38,7 +24,22 @@
         </field>
     </record>
 
+    <!-- Actions with Domain Filters -->
+    <record id="action_helpdesk_open_ticket_graph" model="ir.actions.act_window">
+        <field name="name">Open Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_it_ticket_graph_open"/>
+        <field name="domain">[('state','in',['draft','manager_approval','it_approval','assigned','in_progress'])]</field>
+    </record>
 
+    <record id="action_helpdesk_closed_ticket_graph" model="ir.actions.act_window">
+        <field name="name">Closed Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_it_ticket_graph_closed"/>
+        <field name="domain">[('state','in',['done','rejected'])]</field>
+    </record>
 
     <!-- Dashboard -->
     <record id="it_ticket_dashboard_board" model="ir.ui.view">
@@ -69,4 +70,5 @@
               action="action_dashboard"
               sequence="5"
               name="Dashboard"/>
+
 </odoo>
