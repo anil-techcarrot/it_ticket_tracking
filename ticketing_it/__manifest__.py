@@ -19,6 +19,7 @@
         'data/email_templates.xml',
         'data/ir_cron.xml',
         'views/it_ticket_views.xml',
+        'views/dashboard.xml',
         # 'views/portal_templates.xml',
         'views/reporting_by_average_time.xml',
         'views/reporting_by_category.xml',

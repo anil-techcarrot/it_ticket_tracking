@@ -1,0 +1,72 @@
+<odoo>
+        <!-- Actions with Domain Filters -->
+    <record id="action_helpdesk_open_ticket_graph" model="ir.actions.act_window">
+        <field name="name">Open Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_it_ticket_graph_open"/>
+        <field name="domain">[('state','in',['draft','manager_approval','it_approval','assigned','in_progress'])]
+        </field>
+    </record>
+
+    <record id="action_helpdesk_closed_ticket_graph" model="ir.actions.act_window">
+        <field name="name">Closed Tickets</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="view_it_ticket_graph_closed"/>
+        <field name="domain">[('state','in',['done','rejected'])]</field>
+    </record>
+    <!-- Open Tickets Graph -->
+    <record id="view_it_ticket_graph_open" model="ir.ui.view">
+        <field name="name">it.ticket.graph.open</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Open Tickets by Title" type="pie">
+                <field name="name"/>
+                <field name="open_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_helpdesk_ticket_graph_closed" model="ir.ui.view">
+        <field name="name">it.ticket.graph.closed</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Closed Tickets by Title" type="pie">
+                <field name="name"/>
+                <field name="closed_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+
+
+    <!-- Dashboard -->
+    <record id="it_ticket_dashboard_board" model="ir.ui.view">
+        <field name="name">it.ticket.dashboard.board</field>
+        <field name="model">board.board</field>
+        <field name="arch" type="xml">
+            <form string="Dashboard">
+                <board style="1">
+                    <column>
+                        <action string="Open Tickets" name="%(action_helpdesk_open_ticket_graph)d"/>
+                        <action string="Closed Tickets" name="%(action_helpdesk_closed_ticket_graph)d"/>
+                    </column>
+                </board>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard</field>
+        <field name="res_model">board.board</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="it_ticket_dashboard_board"/>
+        <field name="usage">menu</field>
+    </record>
+
+    <menuitem id="menu_dashboard"
+              parent="menu_it_tickets_root"
+              action="action_dashboard"
+              sequence="5"
+              name="Dashboard"/>
+</odoo>
