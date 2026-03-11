@@ -515,13 +515,7 @@ class ITTicket(models.Model):
                 'submitted_date': fields.Datetime.now(),
             })
 
-            rec.activity_schedule(
-                'mail.mail_activity_data_todo',
-                user_id=rec.it_manager_id.id,
-                summary=_('Hardware Ticket Approval Required: %s') % rec.name,
-                note=_('Hardware ticket submitted by %s. Please approve and assign.')
-                     % rec.employee_id.name
-            )
+            # REMOVED activity_schedule — custom email handles notification
 
             rec.message_post(
                 body=_("Hardware ticket submitted directly to IT Manager: %s")
@@ -543,13 +537,7 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            if rec.it_manager_id:
-                rec.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    user_id=rec.it_manager_id.id,
-                    summary=_('Hardware Ticket - Assign to IT Team: %s') % rec.name,
-                    note=_('Hardware issue reported by %s. Please assign to IT team member.') % rec.employee_id.name
-                )
+            # REMOVED activity_schedule — custom email handles notification
 
             rec.message_post(
                 body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
