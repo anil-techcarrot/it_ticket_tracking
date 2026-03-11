@@ -1,25 +1,23 @@
 <odoo>
 
-    <!-- Open Tickets Graph View (must be defined BEFORE the action that refs it) -->
+    <!-- Open Tickets Graph View -->
     <record id="view_it_ticket_graph_open" model="ir.ui.view">
         <field name="name">it.ticket.graph.open</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <graph string="Open Tickets by Title" type="pie">
-                <field name="name"/>
-                <field name="open_count" type="measure"/>
+            <graph string="Open Tickets by Type" type="pie">
+                <field name="ticket_type"/>
             </graph>
         </field>
     </record>
 
-    <!-- Closed Tickets Graph View (must be defined BEFORE the action that refs it) -->
+    <!-- Closed Tickets Graph View -->
     <record id="view_it_ticket_graph_closed" model="ir.ui.view">
         <field name="name">it.ticket.graph.closed</field>
         <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <graph string="Closed Tickets by Title" type="pie">
-                <field name="name"/>
-                <field name="closed_count" type="measure"/>
+            <graph string="Closed Tickets by Type" type="pie">
+                <field name="ticket_type"/>
             </graph>
         </field>
     </record>
