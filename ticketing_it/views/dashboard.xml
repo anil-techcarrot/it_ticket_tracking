@@ -22,45 +22,31 @@
         </field>
     </record>
 
-    <!-- Actions with Domain Filters -->
-    <record id="action_helpdesk_open_ticket_graph" model="ir.actions.act_window">
-        <field name="name">Open Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">graph</field>
-        <field name="view_id" ref="view_it_ticket_graph_open"/>
-        <field name="domain">[('state','in',['draft','manager_approval','it_approval','assigned','in_progress'])]</field>
-    </record>
-
-    <record id="action_helpdesk_closed_ticket_graph" model="ir.actions.act_window">
-        <field name="name">Closed Tickets</field>
-        <field name="res_model">it.ticket</field>
-        <field name="view_mode">graph</field>
-        <field name="view_id" ref="view_it_ticket_graph_closed"/>
-        <field name="domain">[('state','in',['done','rejected'])]</field>
-    </record>
-
-    <!-- Dashboard -->
-    <record id="it_ticket_dashboard_board" model="ir.ui.view">
-        <field name="name">it.ticket.dashboard.board</field>
-        <field name="model">board.board</field>
+    <!-- Search View with Filter Buttons -->
+    <record id="view_it_ticket_dashboard_search" model="ir.ui.view">
+        <field name="name">it.ticket.dashboard.search</field>
+        <field name="model">it.ticket</field>
         <field name="arch" type="xml">
-            <form string="Dashboard">
-                <board style="1">
-                    <column>
-                        <action string="Open Tickets" name="%(action_helpdesk_open_ticket_graph)d"/>
-                        <action string="Closed Tickets" name="%(action_helpdesk_closed_ticket_graph)d"/>
-                    </column>
-                </board>
-            </form>
+            <search string="IT Tickets">
+                <filter
+                    string="Open Tickets"
+                    name="filter_open"
+                    domain="[('state','in',['draft','manager_approval','it_approval','assigned','in_progress'])]"/>
+                <filter
+                    string="Closed Tickets"
+                    name="filter_closed"
+                    domain="[('state','in',['done','rejected'])]"/>
+            </search>
         </field>
     </record>
 
+    <!-- Single Dashboard Action with default Open filter active -->
     <record id="action_dashboard" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
-        <field name="res_model">board.board</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="it_ticket_dashboard_board"/>
-        <field name="usage">menu</field>
+        <field name="res_model">it.ticket</field>
+        <field name="view_mode">graph</field>
+        <field name="search_view_id" ref="view_it_ticket_dashboard_search"/>
+        <field name="context">{'search_default_filter_open': 1}</field>
     </record>
 
     <menuitem id="menu_dashboard"
