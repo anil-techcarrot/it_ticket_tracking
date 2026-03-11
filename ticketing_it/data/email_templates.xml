@@ -7,7 +7,7 @@
             <field name="name">IT Ticket - Manager Approval Request</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">Action Required: IT Ticket Approval - ${object.name}</field>
-            <field name="email_to">${object.line_manager_id.email | safe}</field>
+            <field name="email_to">${object.line_manager_id.partner_id.email | safe}</field>
             <field name="body_html"><![CDATA[
                 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
 
@@ -79,7 +79,7 @@
             <field name="name">IT Ticket - 24hr Manager Approval Reminder</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">Reminder: IT Ticket Awaiting Your Approval - ${object.name}</field>
-            <field name="email_to">${object.line_manager_id.email | safe}</field>
+            <field name="email_to">${object.line_manager_id.partner_id.email | safe}</field>
             <field name="body_html"><![CDATA[
                 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
 
@@ -148,7 +148,7 @@
             <field name="name">IT Ticket - IT Manager Approval Request</field>
             <field name="model_id" ref="ticketing_it.model_it_ticket"/>
             <field name="subject">IT Approval Required: ${object.name}</field>
-            <field name="email_to">${object.it_manager_id.email | safe}</field>
+            <field name="email_to">${object.it_manager_id.partner_id.email | safe}</field>
             <field name="body_html"><![CDATA[
                 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
 
