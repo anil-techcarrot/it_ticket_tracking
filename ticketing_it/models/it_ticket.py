@@ -515,7 +515,13 @@ class ITTicket(models.Model):
                 'submitted_date': fields.Datetime.now(),
             })
 
-            # REMOVED activity_schedule — custom email handles notification
+            rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=rec.it_manager_id.id,
+                summary=_('Hardware Ticket Approval Required: %s') % rec.name,
+                note=_('Hardware ticket submitted by %s. Please approve and assign.')
+                     % rec.employee_id.name
+            )
 
             rec.message_post(
                 body=_("Hardware ticket submitted directly to IT Manager: %s")
@@ -537,43 +543,16 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            # REMOVED activity_schedule — custom email handles notification
+            if rec.it_manager_id:
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.it_manager_id.id,
+                    summary=_('Hardware Ticket - Assign to IT Team: %s') % rec.name,
+                    note=_('Hardware issue reported by %s. Please assign to IT team member.') % rec.employee_id.name
+                )
 
             rec.message_post(
                 body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
-            )
-
-    # =========================================================
-    # WORKFLOW METHODS - APPROVE/REJECT
-    # =========================================================
-
-    def action_submit(self):
-        """Submit ticket to line manager for approval"""
-        for rec in self:
-            if not rec.line_manager_id:
-                raise ValidationError(
-                    _("No line manager found for employee: %s") % rec.employee_id.name
-                )
-
-            rec.state = 'manager_approval'
-            rec.submitted_date = fields.Datetime.now()
-
-            template = self.env.ref(
-                'ticketing_it.email_template_manager_approval',
-                raise_if_not_found=False
-            )
-            if template:
-                template.send_mail(rec.id, force_send=True)
-
-            # rec.activity_schedule(
-            #     'mail.mail_activity_data_todo',
-            #     user_id=rec.line_manager_id.id,
-            #     summary=_('Ticket Approval Required: %s') % rec.name,
-            #     note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
-            # )
-
-            rec.message_post(
-                body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
             )
 
     # def action_manager_approve(self):
