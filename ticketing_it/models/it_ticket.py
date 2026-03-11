@@ -565,12 +565,12 @@ class ITTicket(models.Model):
             if template:
                 template.send_mail(rec.id, force_send=True)
 
-            rec.activity_schedule(
-                'mail.mail_activity_data_todo',
-                user_id=rec.line_manager_id.id,
-                summary=_('Ticket Approval Required: %s') % rec.name,
-                note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
-            )
+            # rec.activity_schedule(
+            #     'mail.mail_activity_data_todo',
+            #     user_id=rec.line_manager_id.id,
+            #     summary=_('Ticket Approval Required: %s') % rec.name,
+            #     note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
+            # )
 
             rec.message_post(
                 body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
