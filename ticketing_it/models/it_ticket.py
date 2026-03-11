@@ -555,6 +555,39 @@ class ITTicket(models.Model):
                 body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
             )
 
+    # =========================================================
+    # WORKFLOW METHODS - APPROVE/REJECT
+    # =========================================================
+
+    def action_submit(self):
+        """Submit ticket to line manager for approval"""
+        for rec in self:
+            if not rec.line_manager_id:
+                raise ValidationError(
+                    _("No line manager found for employee: %s") % rec.employee_id.name
+                )
+
+            rec.state = 'manager_approval'
+            rec.submitted_date = fields.Datetime.now()
+
+            template = self.env.ref(
+                'ticketing_it.email_template_manager_approval',
+                raise_if_not_found=False
+            )
+            if template:
+                template.send_mail(rec.id, force_send=True)
+
+            rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=rec.line_manager_id.id,
+                summary=_('Ticket Approval Required: %s') % rec.name,
+                note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
+            )
+
+            rec.message_post(
+                body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
+            )
+
     # def action_manager_approve(self):
     #     """Line manager approves ticket — sends email to IT manager"""
     #     for rec in self:
