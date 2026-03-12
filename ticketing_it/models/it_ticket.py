@@ -3,6 +3,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError, AccessError
 from collections import defaultdict
+from email.utils import parseaddr
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -25,6 +26,16 @@ class ITTicket(models.Model):
         copy=False,
         readonly=True,
         default='New',
+        tracking=True
+    )
+
+    ticket_source = fields.Selection(
+        [
+            ('portal', 'ESS Portal'),
+            ('email', 'Email'),
+        ],
+        string="Ticket Source",
+        default='portal',
         tracking=True
     )
 
@@ -60,7 +71,7 @@ class ITTicket(models.Model):
         ('social_media', 'Social Media Access'),
         ('network', 'Network Issue'),
         ('other', 'Other'),
-    ], required=True, tracking=True, string='Ticket Type')
+    ], default='other',required=True, tracking=True, string='Ticket Type')
 
     priority = fields.Selection([
         ('0', 'Low'),
@@ -960,6 +971,45 @@ class ITTicket(models.Model):
                 ticket.sudo().write({'last_reminder_sent': now})
                 ticket.message_post(
                     body=_("Consolidated reminder sent to %s") % user.name
+
                 )
 
+
         _logger.info("===== CRON FINISHED =====")
+
+    @api.model
+    def message_new(self, msg, custom_values=None):
+        """
+        Create IT Ticket when email is received.
+        """
+
+        name, email = parseaddr(msg.get('from'))
+
+        # Find employee using email
+        employee = self.env['hr.employee'].search([
+            ('work_email', '=', email)
+        ], limit=1)
+
+        if not employee:
+            raise ValidationError(
+                _("No employee found with email: %s. Please create employee first.") % email
+            )
+
+        values = {
+            'name': 'New',
+            'employee_id': employee.id,
+            'subject': msg.get('subject', 'No Subject'),
+            'description': msg.get('body', ''),
+            'ticket_type': 'other',
+            'priority': '1',
+            'state': 'manager_approval',
+            'submitted_date': fields.Datetime.now(),
+            'ticket_source': 'email',
+        }
+
+        if custom_values:
+            values.update(custom_values)
+
+        return super().message_new(msg, custom_values=values)
+
+

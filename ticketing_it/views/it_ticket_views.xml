@@ -16,6 +16,8 @@
                        decoration-danger="state=='rejected'"
                        decoration-warning="state in ['manager_approval','it_approval']"/>
                 <field name="create_date"/>
+
+                <field name="ticket_source" readonly="1"/>
             </list>
         </field>
     </record>
@@ -113,6 +115,7 @@
                             <field name="name" readonly="1"/>
                             <field name="employee_id"/>
                             <field name="ticket_type"/>
+                            <field name="ticket_source"/>
                             <field name="priority" widget="priority"/>
                             <!--                            <field name="done_date"/>-->
                             <field name="submitted_date"/>
