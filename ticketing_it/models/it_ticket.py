@@ -414,7 +414,7 @@ class ITTicket(models.Model):
                   text-decoration: none; padding: 20px 60px; border-radius: 8px;
                   font-size: 20px; font-weight: bold; letter-spacing: 1px;
                   box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            &#128065; VIEW IT SUPPORT TICKET
+            VIEW IT SUPPORT TICKET
         </a>
     </div>
     <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
@@ -507,7 +507,7 @@ class ITTicket(models.Model):
 
             body = rec._build_ticket_email_body(
                 header_color='#2980b9',
-                header_title='&#128295; IT Manager Approval Required',
+                header_title='IT Manager Approval Required',
                 button_color='#2980b9',
                 button_url=f'/odoo/it-tickets/{rec.id}',
                 recipient_name=rec.it_manager_id.name,
@@ -541,7 +541,7 @@ class ITTicket(models.Model):
 
             body = rec._build_ticket_email_body(
                 header_color='#27ae60',
-                header_title='&#9989; Your Ticket Has Been Assigned',
+                header_title='Your Ticket Has Been Assigned',
                 button_color='#27ae60',
                 button_url=f'/my/tickets/{rec.id}',
                 recipient_name=rec.employee_id.name,
@@ -583,7 +583,7 @@ class ITTicket(models.Model):
 
             body = rec._build_ticket_email_body(
                 header_color='#2c3e50',
-                header_title='&#127903; IT Ticket - Approval Required',
+                header_title='IT Ticket - Approval Required',
                 button_color='#e67e22',
                 button_url=f'/odoo/it-tickets/{rec.id}',
                 recipient_name=rec.line_manager_id.name,
@@ -684,7 +684,7 @@ class ITTicket(models.Model):
 
             body = rec._build_ticket_email_body(
                 header_color='#c0392b',
-                header_title='&#10060; IT Ticket Rejected',
+                header_title='IT Ticket Rejected',
                 button_color='#c0392b',
                 button_url=f'/my/tickets/{rec.id}',
                 recipient_name=rec.employee_id.name,
@@ -728,7 +728,7 @@ class ITTicket(models.Model):
 
             body = rec._build_ticket_email_body(
                 header_color='#27ae60',
-                header_title='&#127881; Your IT Ticket Is Resolved',
+                header_title='Your IT Ticket Is Resolved',
                 button_color='#27ae60',
                 button_url=f'/my/tickets/{rec.id}',
                 recipient_name=rec.employee_id.name,
@@ -775,7 +775,7 @@ class ITTicket(models.Model):
 
                 body = ticket._build_ticket_email_body(
                     header_color='#e74c3c',
-                    header_title='&#9203; Approval Reminder',
+                    header_title='Approval Reminder',
                     button_color='#e74c3c',
                     button_url=f'/odoo/it-tickets/{ticket.id}',
                     recipient_name=manager.name,
@@ -922,7 +922,7 @@ class ITTicket(models.Model):
             body = f"""
 <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
     <div style="background-color: #e67e22; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h2 style="color: white; margin: 0;">&#9203; Pending Tickets Reminder</h2>
+        <h2 style="color: white; margin: 0;">Pending Tickets Reminder</h2>
     </div>
     <div style="background-color: #fef9f0; padding: 30px; text-align: center;
                 border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
@@ -934,7 +934,7 @@ class ITTicket(models.Model):
                   text-decoration: none; padding: 20px 60px; border-radius: 8px;
                   font-size: 20px; font-weight: bold; letter-spacing: 1px;
                   box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            &#128065; VIEW IT SUPPORT TICKET
+            VIEW IT SUPPORT TICKET
         </a>
     </div>
     <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
