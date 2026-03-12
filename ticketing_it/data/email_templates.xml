@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <!-- 1. Manager Approval Request -->
         <record id="email_template_manager_approval" model="mail.template">
