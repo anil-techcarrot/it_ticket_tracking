@@ -305,6 +305,12 @@ class PortalEmployeeSyncController(http.Controller):
                 'period_in_company': self._val(data.get('period_in_company')),
             }
 
+            current_address_val = self._val(data.get('current_address'))
+            company_id = self._get_company_from_address(current_address_val)
+            if company_id:
+                vals['company_id'] = company_id
+                _logger.info("Auto-assigned company_id: %s", company_id)
+
             # Set emp_code from SharePoint
             if emp_code_from_sharepoint:
                 vals['emp_code'] = emp_code_from_sharepoint
@@ -459,6 +465,52 @@ class PortalEmployeeSyncController(http.Controller):
         if not name:
             return None
         return request.env['hr.employee'].sudo().search([('name', '=ilike', name)], limit=1)
+
+
+
+    def _get_company_from_address(self, current_address):
+        """
+        Auto-assign company based on current_address.
+        India → techcarrot India Private Limited
+        Dubai/UAE → techcarrot FZ-LLC
+        """
+        if not current_address:
+            return None
+
+        address = str(current_address).lower().strip()
+
+        # Keywords for India
+        india_keywords = ['india', 'hyderabad', 'bangalore', 'mumbai', 'delhi',
+                          'chennai', 'pune', 'kolkata', 'noida', 'gurugram']
+
+        # Keywords for Dubai/UAE
+        uae_keywords = ['dubai', 'uae', 'abu dhabi', 'sharjah', 'ajman',
+                        'united arab emirates', 'abudhabi']
+
+        for keyword in india_keywords:
+            if keyword in address:
+                company = request.env['res.company'].sudo().search(
+                    [('name', 'ilike', 'techcarrot India Private Limited')], limit=1
+                )
+                if company:
+                    _logger.info("Company assigned: %s for address: %s", company.name, current_address)
+                    return company.id
+                break
+
+        for keyword in uae_keywords:
+            if keyword in address:
+                company = request.env['res.company'].sudo().search(
+                    [('name', 'ilike', 'techcarrot FZ-LLC')], limit=1
+                )
+                if company:
+                    _logger.info("Company assigned: %s for address: %s", company.name, current_address)
+                    return company.id
+                break
+
+        _logger.warning("Could not determine company from address: %s", current_address)
+        return None
+
+
 
     def _json_response(self, data, status=200):
         return request.make_response(
