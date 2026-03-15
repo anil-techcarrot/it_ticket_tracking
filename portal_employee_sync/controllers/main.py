@@ -469,11 +469,7 @@ class PortalEmployeeSyncController(http.Controller):
 
 
     def _get_company_from_address(self, current_address):
-        """
-        Auto-assign company based on current_address.
-        India → techcarrot India Private Limited
-        Dubai/UAE → techcarrot FZ-LLC
-        """
+
         if not current_address:
             return None
 
