@@ -66,7 +66,8 @@
                 <div class="card border-0 shadow-sm">
 
                     <!-- ✅ CHANGED: Green to Orange gradient header -->
-                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #2D6A4F 0%, #E8450A 100%); border-radius: 8px 8px 0 0;">
+                    <div class="card-header text-white py-3"
+                         style="background: linear-gradient(135deg, #2D6A4F 0%, #E8450A 100%); border-radius: 8px 8px 0 0;">
                         <h5 class="mb-0" style="font-size: 18px; font-weight: 700;">
                             <i class="fa fa-plus-circle me-2"></i>
                             New IT Support Request
@@ -81,18 +82,30 @@
 
                                 <!-- Ticket Type -->
                                 <div class="col-md-6">
-                                    <label for="ticket_type" class="form-label fw-bold">
+                                    <label for="ticket_type_id" class="form-label fw-bold">
                                         Ticket Type
                                         <span class="text-danger">*</span>
                                     </label>
-                                    <select name="ticket_type" id="ticket_type" class="form-select" required="required">
+                                    <select name="ticket_type_id" id="ticket_type_id" class="form-select"
+                                            required="required">
                                         <option value="">-- Select Issue Type --</option>
-                                        <option value="hardware">🖥️ Hardware Issue</option>
-                                        <option value="software">💻 Software Issue</option>
-                                        <option value="social_media">📱 Social Media Access</option>
-                                        <option value="network">🌐 Network Issue</option>
-                                        <option value="other">📋 Other</option>
+
+                                        <t t-foreach="ticket_types" t-as="type">
+                                            <option t-att-value="type.id">
+                                                <t t-esc="type.name"/>
+                                            </option>
+                                        </t>
+
                                     </select>
+                                    <!--                                    <select name="ticket_type_id" id="ticket_type_id" class="form-select" required="required">-->
+                                    <!--                                        <option value="">&#45;&#45; Select Issue Type &#45;&#45;</option>-->
+                                    <!--                                        <option value="hardware">🖥️ Hardware Issue</option>-->
+                                    <!--                                        <option value="software">💻 Software Issue</option>-->
+                                    <!--                                        <option value="social_media">📱 Social Media Access</option>-->
+                                    <!--                                        <option value="network">🌐 Network Issue</option>-->
+                                    <!--                                        <option value="other">📋 Other</option>-->
+                                    <!--                                    </select>-->
+
                                 </div>
 
                                 <!-- Priority -->
@@ -108,7 +121,6 @@
                                         <option value="3">🔴 Urgent</option>
                                     </select>
                                 </div>
-
                                 <!-- Subject -->
                                 <div class="col-12">
                                     <label for="subject" class="form-label fw-bold">
@@ -173,7 +185,8 @@
                                     <div class="form-control bg-light" style="cursor: not-allowed;">
                                         <i class="fa fa-user text-muted me-2"></i>
                                         <t t-esc="employee.name"/>
-                                        <small class="text-muted ms-2">(<t t-esc="employee.job_id.name or 'Employee'"/>)</small>
+                                        <small class="text-muted ms-2">(<t t-esc="employee.job_id.name or 'Employee'"/>)
+                                        </small>
                                     </div>
                                 </div>
 
@@ -185,9 +198,12 @@
                                         <small class="text-muted fw-normal ms-1">(approves this ticket)</small>
                                     </label>
                                     <t t-if="line_manager">
-                                        <div class="form-control bg-light d-flex align-items-center" style="cursor: not-allowed;">
+                                        <div class="form-control bg-light d-flex align-items-center"
+                                             style="cursor: not-allowed;">
                                             <i class="fa fa-user-circle text-primary me-2"></i>
-                                            <span><t t-esc="line_manager.name"/></span>
+                                            <span>
+                                                <t t-esc="line_manager.name"/>
+                                            </span>
                                         </div>
                                         <div class="form-text text-success">
                                             <i class="fa fa-check-circle me-1"></i>
@@ -195,7 +211,8 @@
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <div class="form-control bg-light d-flex align-items-center border-warning" style="cursor: not-allowed;">
+                                        <div class="form-control bg-light d-flex align-items-center border-warning"
+                                             style="cursor: not-allowed;">
                                             <i class="fa fa-exclamation-triangle text-warning me-2"></i>
                                             <span class="text-warning">Not assigned</span>
                                         </div>
@@ -294,69 +311,69 @@
                 <style>
                     /* ── Filter Tabs ── */
                     .tc-filter-btn {
-                        padding: 16px 32px !important;
-                        font-size: 17px !important;
-                        font-weight: 700 !important;
-                        border-radius: 8px !important;
-                        border: none !important;
-                        background-color: #E8450A !important;
-                        color: white !important;
-                        text-decoration: none !important;
-                        margin: 4px !important;
-                        display: inline-block !important;
-                        transition: all 0.2s ease !important;
+                    padding: 16px 32px !important;
+                    font-size: 17px !important;
+                    font-weight: 700 !important;
+                    border-radius: 8px !important;
+                    border: none !important;
+                    background-color: #E8450A !important;
+                    color: white !important;
+                    text-decoration: none !important;
+                    margin: 4px !important;
+                    display: inline-block !important;
+                    transition: all 0.2s ease !important;
                     }
                     .tc-filter-btn:hover {
-                        background-color: #2D6A4F !important;
-                        color: white !important;
-                        transform: translateY(-1px) !important;
+                    background-color: #2D6A4F !important;
+                    color: white !important;
+                    transform: translateY(-1px) !important;
                     }
                     .tc-filter-btn.tc-active {
-                        background-color: #2D6A4F !important;
-                        color: white !important;
-                        box-shadow: 0 4px 12px rgba(45,106,79,0.4) !important;
+                    background-color: #2D6A4F !important;
+                    color: white !important;
+                    box-shadow: 0 4px 12px rgba(45,106,79,0.4) !important;
                     }
 
                     /* ── Card Badges ── */
                     .tc-badge {
-                        font-size: 13px !important;
-                        font-weight: 700 !important;
-                        padding: 6px 12px !important;
-                        border-radius: 6px !important;
-                        letter-spacing: 0.3px !important;
+                    font-size: 13px !important;
+                    font-weight: 700 !important;
+                    padding: 6px 12px !important;
+                    border-radius: 6px !important;
+                    letter-spacing: 0.3px !important;
                     }
 
                     /* ── Type / Priority labels ── */
                     .tc-label {
-                        font-size: 13px !important;
-                        font-weight: 600 !important;
-                        padding: 5px 10px !important;
-                        border-radius: 5px !important;
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                    padding: 5px 10px !important;
+                    border-radius: 5px !important;
                     }
 
                     /* ── View Details button ── */
                     .tc-view-btn {
-                        font-size: 14px !important;
-                        font-weight: 600 !important;
-                        padding: 10px 0 !important;
-                        border: 2px solid #E8450A !important;
-                        color: #E8450A !important;
-                        border-radius: 6px !important;
-                        background: white !important;
-                        transition: all 0.2s ease !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                    padding: 10px 0 !important;
+                    border: 2px solid #E8450A !important;
+                    color: #E8450A !important;
+                    border-radius: 6px !important;
+                    background: white !important;
+                    transition: all 0.2s ease !important;
                     }
                     .tc-view-btn:hover {
-                        background: #E8450A !important;
-                        color: white !important;
+                    background: #E8450A !important;
+                    color: white !important;
                     }
 
                     /* ── Ticket card ── */
                     .tc-ticket-card {
-                        border-left: 4px solid #2D6A4F !important;
-                        transition: box-shadow 0.2s ease !important;
+                    border-left: 4px solid #2D6A4F !important;
+                    transition: box-shadow 0.2s ease !important;
                     }
                     .tc-ticket-card:hover {
-                        box-shadow: 0 6px 20px rgba(0,0,0,0.12) !important;
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.12) !important;
                     }
                 </style>
 
@@ -447,14 +464,17 @@
                                         <!-- Ticket Details -->
                                         <div class="row g-2 mb-3">
                                             <div class="col-6">
-                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">Type:</small>
+                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">Type:
+                                                </small>
                                                 <!-- ✅ BIGGER Type label -->
                                                 <span class="tc-label" style="background: #f0f4f8; color: #1B2A4A;">
-                                                    <t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/>
+                                                    <t t-esc="ticket.ticket_type_id.name or 'N/A'"/>
                                                 </span>
                                             </div>
                                             <div class="col-6">
-                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">Priority:</small>
+                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">
+                                                    Priority:
+                                                </small>
                                                 <!-- ✅ BIGGER Priority label -->
                                                 <span class="tc-label" t-attf-style="
                                                     background-color: #{
@@ -469,7 +489,9 @@
                                                 </span>
                                             </div>
                                             <div class="col-12 mt-2">
-                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">Created:</small>
+                                                <small class="text-muted d-block mb-1" style="font-size: 12px;">
+                                                    Created:
+                                                </small>
                                                 <span style="font-size: 14px;">
                                                     <i class="fa fa-clock-o me-1" style="color: #E8450A;"></i>
                                                     <t t-esc="ticket.create_date.strftime('%Y-%m-%d %H:%M')"/>
@@ -520,10 +542,16 @@
                 <nav aria-label="breadcrumb" class="mb-3">
                     <ol class="breadcrumb">
                         <li class="breadcrumb-item">
-                            <a href="/my/ess"><i class="fa fa-tachometer"></i> Dashboard</a>
+                            <a href="/my/ess">
+                                <i class="fa fa-tachometer"></i>
+                                Dashboard
+                            </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="/my/tickets"><i class="fa fa-ticket"></i> My Tickets</a>
+                            <a href="/my/tickets">
+                                <i class="fa fa-ticket"></i>
+                                My Tickets
+                            </a>
                         </li>
                         <li class="breadcrumb-item active" t-esc="ticket.name"/>
                     </ol>
@@ -572,7 +600,7 @@
                                     <div class="col-md-6">
                                         <label class="text-muted small">Ticket Type</label>
                                         <p class="mb-0 fw-bold" style="font-size: 15px;">
-                                            <t t-esc="dict(ticket._fields['ticket_type'].selection).get(ticket.ticket_type)"/>
+                                            <t t-esc="ticket.ticket_type_id.name or 'N/A'"/>
                                         </p>
                                     </div>
                                     <div class="col-md-6">
@@ -666,21 +694,24 @@
                             <div class="card-body p-4">
                                 <t t-if="ticket.line_manager_id">
                                     <p class="mb-2" style="font-size: 14px;">
-                                        <strong>Line Manager:</strong><br/>
+                                        <strong>Line Manager:</strong>
+                                        <br/>
                                         <i class="fa fa-user me-1" style="color:#2D6A4F;"></i>
                                         <t t-esc="ticket.line_manager_id.name"/>
                                     </p>
                                 </t>
                                 <t t-if="ticket.it_manager_id">
                                     <p class="mb-2" style="font-size: 14px;">
-                                        <strong>IT Manager:</strong><br/>
+                                        <strong>IT Manager:</strong>
+                                        <br/>
                                         <i class="fa fa-user me-1" style="color:#E8450A;"></i>
                                         <t t-esc="ticket.it_manager_id.name"/>
                                     </p>
                                 </t>
                                 <t t-if="ticket.assigned_to_id">
                                     <p class="mb-0" style="font-size: 14px;">
-                                        <strong>IT Team Member:</strong><br/>
+                                        <strong>IT Team Member:</strong>
+                                        <br/>
                                         <i class="fa fa-user me-1" style="color:#2D6A4F;"></i>
                                         <t t-esc="ticket.assigned_to_id.name"/>
                                     </p>

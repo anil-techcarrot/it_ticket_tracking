@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="action_workflow_level" model="ir.actions.act_window">
+        <field name="name">Workflow Level</field>
+        <field name="res_model">it.ticket.workflow.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
     <!-- Action: Tickets by Time -->
     <record id="action_ticket_avg_processing" model="ir.actions.act_window">
         <field name="name">Average Processing Time</field>
@@ -14,7 +19,7 @@
         <field name="name">Tickets by Category</field>
         <field name="res_model">it.ticket.report.type</field>
         <field name="view_mode">kanban,form,graph</field>
-        <field name="context">{'group_by': 'ticket_type'}</field>
+        <field name="context">{'group_by': 'ticket_type_id'}</field>
     </record>
 
     <!-- Action: Open Tickets -->
@@ -48,6 +53,19 @@
             action = model.open_reminder_wizard()
         </field>
     </record>
+    <record id="action_open_duration_server" model="ir.actions.server">
+        <field name="name">Duration Configuration</field>
+        <field name="model_id" ref="model_it_ticket"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = {
+            "type": "ir.actions.act_window",
+            "res_model": "it.duration.config.wizard",
+            "view_mode": "form",
+            "target": "new"
+            }
+        </field>
+    </record>
     <menuitem id="menu_it_tickets_root" name="IT Helpdesk" sequence="10"/>
 
     <!-- IT Manager sees ALL tickets -->
@@ -65,7 +83,7 @@
               sequence="10"
               groups="ticketing_it.group_line_manager"/>
 
-<!--     Line Manager: tickets pending their approval-->
+    <!--     Line Manager: tickets pending their approval-->
     <menuitem id="menu_it_tickets_pending_manager"
               name="Pending My Approval"
               parent="menu_it_tickets_root"
@@ -121,6 +139,21 @@
               name="Reminders"
               parent="menu_it_tickets_configuration"
               action="action_open_reminder_server"
+              sequence="10"/>
+    <menuitem id="menu_it_tickets_configuration_duration"
+              name="Duration"
+              parent="menu_it_tickets_configuration"
+              action="action_open_duration_server"
+              sequence="20"/>
+    <menuitem id="menu_workflow_level"
+              name="Workflow Level"
+              parent="menu_it_tickets_configuration"
+              action="action_workflow_level"
+              sequence="30"/>
+    <menuitem id="menu_ticket_workflow_config"
+              name="Ticket Types"
+              parent="menu_workflow_level"
+              action="action_ticket_workflow_config"
               sequence="10"/>
     <!--    <menuitem id="menu_dashboard"-->
     <!--              name="Dashboard"-->

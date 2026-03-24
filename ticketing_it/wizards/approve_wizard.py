@@ -94,28 +94,78 @@ class ItTicketApproveWizard(models.TransientModel):
         # =====================================================
         # IT MANAGER APPROVAL
         # =====================================================
+        # elif rec.state == 'it_approval':
+        #
+        #     _logger.info("Processing IT Manager Approval")
+        #
+        #     if not self.env.user.has_group('ticketing_it.group_it_manager'):
+        #         _logger.error("User does NOT belong to IT Manager group")
+        #         raise UserError(_("Only IT managers can approve this ticket"))
+        #
+        #     if not rec.assigned_to_id:
+        #         _logger.error("Assigned To is missing")
+        #         raise ValidationError(
+        #             _("You must select 'Assigned To' before approving.")
+        #         )
+        #
+        #     rec.state = 'assigned'
+        #     rec.it_approval_date = odoo_fields.Datetime.now()
+        #
+        #     _logger.info("State changed to assigned")
+        #
+        #     rec.activity_unlink(['mail.mail_activity_data_todo'])
+        #     _logger.info("Existing activities removed")
+        #
+        #     template = self.env.ref(
+        #         'ticketing_it.email_template_it_assigned',
+        #         raise_if_not_found=False
+        #     )
+        #
+        #     if template:
+        #         template.send_mail(rec.id, force_send=True)
+        #         _logger.info("Assigned email sent successfully")
+        #     else:
+        #         _logger.warning("Assigned email template not found")
+        #
+        #     message_body = _(
+        #         "Approved by IT Manager: %s<br/>"
+        #         "Assigned to %s in IT Team."
+        #     ) % (self.env.user.name, rec.assigned_to_id.name)
         elif rec.state == 'it_approval':
 
             _logger.info("Processing IT Manager Approval")
 
+            # ✅ Check IT Manager group
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 _logger.error("User does NOT belong to IT Manager group")
                 raise UserError(_("Only IT managers can approve this ticket"))
 
+            # ✅ Auto-assign if not assigned
             if not rec.assigned_to_id:
-                _logger.error("Assigned To is missing")
-                raise ValidationError(
-                    _("You must select 'Assigned To' before approving.")
-                )
+                _logger.warning("Assigned To is missing. Fetching from IT Team group")
 
-            rec.state = 'assigned'
-            rec.it_approval_date = odoo_fields.Datetime.now()
+                it_team = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
+
+                if it_team and it_team.user_ids:
+                    rec.assigned_to_id = it_team.user_ids[0].id
+                    _logger.info("Auto-assigned to: %s", rec.assigned_to_id.name)
+                else:
+                    _logger.error("No users found in IT Team group")
+                    raise ValidationError(_("No users found in IT Team to assign."))
+
+            # ✅ Update state
+            rec.write({
+                'state': 'assigned',
+                'it_approval_date': fields.Datetime.now(),
+            })
 
             _logger.info("State changed to assigned")
 
+            # ✅ Remove previous activities
             rec.activity_unlink(['mail.mail_activity_data_todo'])
             _logger.info("Existing activities removed")
 
+            # ✅ Send email
             template = self.env.ref(
                 'ticketing_it.email_template_it_assigned',
                 raise_if_not_found=False
@@ -127,11 +177,11 @@ class ItTicketApproveWizard(models.TransientModel):
             else:
                 _logger.warning("Assigned email template not found")
 
+            # ✅ Chatter message
             message_body = _(
                 "Approved by IT Manager: %s<br/>"
                 "Assigned to %s in IT Team."
             ) % (self.env.user.name, rec.assigned_to_id.name)
-
         else:
             _logger.error("Invalid approval type received: %s", self.approval_type)
             raise UserError(_("Invalid approval type."))

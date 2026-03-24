@@ -11,7 +11,10 @@ access_it_ticket_approve_wizard_user,it.ticket.approve.wizard.user,model_it_tick
 access_it_ticket_approve_wizard_manager,it.ticket.approve.wizard.manager,model_it_ticket_approve_wizard,group_it_manager,1,1,1,1
 access_it_ticket_approve_wizard_team,it.ticket.approve.wizard.team,model_it_ticket_approve_wizard,group_it_team,1,1,1,1
 access_it_reminder_config_wizard,it.reminder.config.wizard,model_it_reminder_config_wizard,ticketing_it.group_it_manager,1,1,1,1
+access_it_duration_config_wizard,it.duration.config.wizard,model_it_duration_config_wizard,ticketing_it.group_it_manager,1,1,1,1
 access_it_ticket_report_processing,it.ticket.report.processing,model_it_ticket_report_processing,,1,0,0,0
 access_it_ticket_report_type,it.ticket.report.type,model_it_ticket_report_type,,1,0,0,0
 access_it_ticket_report_open,it.ticket.report.open,model_it_ticket_report_open,,1,0,0,0
 access_it_ticket_report_solved,it.ticket.report.solved,model_it_ticket_report_solved,,1,0,0,0
+access_ticket_workflow_config_it_manager,access_ticket_workflow_config_it_manager,model_it_ticket_workflow_config,ticketing_it.group_it_manager,1,1,1,1
+access_ticket_it_ticket_type_it_manager,access_it_ticket_type_it_manager,model_it_ticket_type,,1,0,0,0

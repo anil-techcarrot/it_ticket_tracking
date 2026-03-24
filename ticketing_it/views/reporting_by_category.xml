@@ -56,9 +56,9 @@
         <field name="name">it.ticket.by.type.kanban</field>
         <field name="model">it.ticket.report.type</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_small_column" default_group_by="ticket_type">
+            <kanban class="o_kanban_small_column" default_group_by="ticket_type_id">
                 <field name="name"/>
-                <field name="ticket_type"/>
+                <field name="ticket_type_id"/>
                 <field name="assigned_to_id"/>
                 <templates>
                     <t t-name="card">
@@ -67,7 +67,7 @@
                                 <field name="name"/>
                             </strong>
                             <div>Type:
-                                <field name="ticket_type"/>
+                                <field name="ticket_type_id"/>
                             </div>
                             <div>Assigned To:
                                 <field name="assigned_to_id"/>
@@ -88,7 +88,7 @@
         <field name="model">it.ticket.report.type</field>
         <field name="arch" type="xml">
             <graph string="Tickets by Type" type="pie">
-                <field name="ticket_type" type="row"/>
+                <field name="ticket_type_id" type="row"/>
                 <field name="id" type="measure"/>
             </graph>
         </field>

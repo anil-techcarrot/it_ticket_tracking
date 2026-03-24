@@ -3,10 +3,23 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError, AccessError
 from collections import defaultdict
-from email.utils import parseaddr
+from datetime import timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
+
+
+class ITTicketType(models.Model):
+    _name = 'it.ticket.type'
+    _description = 'IT Ticket Type'
+    _rec_name = 'name'
+
+    name = fields.Char(required=True)
+    code = fields.Char(required=True)
+
+    _sql_constraints = [
+        ('unique_code', 'unique(code)', 'Ticket type code must be unique!')
+    ]
 
 
 class ITTicket(models.Model):
@@ -26,16 +39,6 @@ class ITTicket(models.Model):
         copy=False,
         readonly=True,
         default='New',
-        tracking=True
-    )
-
-    ticket_source = fields.Selection(
-        [
-            ('portal', 'ESS Portal'),
-            ('email', 'Email'),
-        ],
-        string="Ticket Source",
-        default='portal',
         tracking=True
     )
 
@@ -65,14 +68,19 @@ class ITTicket(models.Model):
     # DETAILS
     # ======================
 
-    ticket_type = fields.Selection([
-        ('hardware', 'Hardware Issue'),
-        ('software', 'Software Issue'),
-        ('social_media', 'Social Media Access'),
-        ('network', 'Network Issue'),
-        ('other', 'Other'),
-    ], default='other',required=True, tracking=True, string='Ticket Type')
-
+    # ticket_type = fields.Selection([
+    #     ('hardware', 'Hardware Issue'),
+    #     ('software', 'Software Issue'),
+    #     ('social_media', 'Social Media Access'),
+    #     ('network', 'Network Issue'),
+    #     ('other', 'Other'),
+    # ], required=True, tracking=True, string='Ticket Type')
+    ticket_type_id = fields.Many2one(
+        'it.ticket.type',
+        string='Ticket Type Id',
+        required=True,
+        tracking=True
+    )
     priority = fields.Selection([
         ('0', 'Low'),
         ('1', 'Normal'),
@@ -84,7 +92,6 @@ class ITTicket(models.Model):
     description = fields.Html(required=True, string='Description')
     required_date = fields.Date(string='Required By Date')
     user_id = fields.Many2one('res.users', string="Assigned To")
-
     # ======================
     # STATE
     # ======================
@@ -123,7 +130,11 @@ class ITTicket(models.Model):
         string="Assigned To",
         tracking=True
     )
-
+    suggested_assigned_to_id = fields.Many2one(
+        'res.users',
+        string="Suggested IT Support",
+        compute="_compute_suggested_assignee"
+    )
     # ======================
     # DATES
     # ======================
@@ -138,7 +149,15 @@ class ITTicket(models.Model):
         readonly=True,
         string='Last Reminder Sent'
     )
+    duration = fields.Selection([
+        ('3m', '3 Months'),
+        ('6m', '6 Months'),
+        ('12m', '1 Year')
+    ], string="Access Duration")
 
+    access_start_date = fields.Date()
+    access_end_date = fields.Date()
+    access_finish_date = fields.Datetime()
     # ======================
     # REJECTION
     # ======================
@@ -156,12 +175,12 @@ class ITTicket(models.Model):
     show_it_manager = fields.Boolean(
         string="Visible to IT Manager",
         compute="_compute_show_to_it_manager",
-        store=True,
+        store=True,  # <-- important!
     )
     show_it_teams = fields.Boolean(
         string="Visible to IT team",
         compute="_compute_show_to_it_team",
-        store=True,
+        store=True,  # <-- important!
     )
     is_line_manager = fields.Boolean(compute="_compute_user_roles")
     is_it_manager = fields.Boolean(compute="_compute_user_roles")
@@ -169,8 +188,7 @@ class ITTicket(models.Model):
         compute="_compute_show_line_manager"
     )
 
-    line_manager_user_id = fields.Many2one('res.users', string='Line Manager User')
-
+    line_manager_user_id = fields.Many2one('res.users', string='Line Manager User')  # New field
     # ======================
     # PROCESSING TIME FIELDS
     # ======================
@@ -194,7 +212,6 @@ class ITTicket(models.Model):
         compute='_compute_total_resolution_time',
         store=True
     )
-
     # ======================
     # REPORTING FIELDS (DAYS)
     # ======================
@@ -219,22 +236,94 @@ class ITTicket(models.Model):
         store=True,
         aggregator="avg"
     )
+    status_category = fields.Selection(
+        [('open', 'Open'), ('closed', 'Closed')],
+        string='Status Category',
+        compute='_compute_status_category',
+        store=True
+    )
+    open_count = fields.Integer(string="Open Count", compute="_compute_counts", store=True)
+    closed_count = fields.Integer(string="Closed Count", compute="_compute_counts", store=True)
+    is_social_media = fields.Boolean(compute="_compute_is_social_media")
 
-    @api.depends('submitted_date', 'manager_approval_date', 'it_approval_date', 'done_date')
+    # @api.depends('ticket_type_id')
+    def _compute_is_social_media(self):
+        social_media = self.env.ref('ticketing_it.type_social', raise_if_not_found=False)
+        for rec in self:
+            rec.is_social_media = rec.ticket_type_id == social_media
+
+    @api.depends()
+    def _compute_suggested_assignee(self):
+
+        it_team = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
+
+        first_user = False
+        if it_team and it_team.user_ids:
+            first_user = it_team.user_ids[0]
+
+        for rec in self:
+            if not rec.assigned_to_id and first_user:
+                rec.assigned_to_id = first_user
+
+    @api.depends('state')
+    def _compute_counts(self):
+        for rec in self:
+            rec.open_count = 1 if rec.status_category == 'open' else 0
+            rec.closed_count = 1 if rec.status_category == 'closed' else 0
+
+    @api.depends('state')
+    def _compute_status_category(self):
+        open_count = defaultdict(int)
+        closed_count = defaultdict(int)
+
+        for rec in self:
+            # Compute status
+            if rec.state in ['done', 'rejected']:
+                rec.status_category = 'closed'
+                closed_count[rec.ticket_type_id.code] += 1
+                _logger.info("rec.ticket_type_id.code: %s | closed_count[rec.ticket_type_id]: %s",
+                             rec.ticket_type_id.code, closed_count[rec.ticket_type_id.code])
+            else:
+                rec.status_category = 'open'
+                open_count[rec.ticket_type_id.code] += 1
+                _logger.info("rec.ticket_type_id.code: %s | open_count[rec.ticket_type_id]: %s",
+                             rec.ticket_type_id.code,
+                             open_count[rec.ticket_type_id.code])
+
+        # Log counts
+        _logger.info("===== Ticket Counts by Type =====")
+        _logger.info("Open Tickets:")
+        for ttype, count in open_count.items():
+            _logger.info("Type: %s | Count: %s", ttype, count)
+
+        _logger.info("Closed Tickets:")
+        for ttype, count in closed_count.items():
+            _logger.info("Type: %s | Count: %s", ttype, count)
+
+    @api.depends(
+        'submitted_date',
+        'manager_approval_date',
+        'it_approval_date',
+        'done_date'
+    )
     def _compute_processing_days(self):
         for rec in self:
+
+            # Line Manager Days
             if rec.submitted_date and rec.manager_approval_date:
                 delta = rec.manager_approval_date - rec.submitted_date
                 rec.manager_processing_days = delta.total_seconds() / 86400
             else:
                 rec.manager_processing_days = 0
 
+            # IT Manager Days
             if rec.manager_approval_date and rec.it_approval_date:
                 delta = rec.it_approval_date - rec.manager_approval_date
                 rec.it_processing_days = delta.total_seconds() / 86400
             else:
                 rec.it_processing_days = 0
 
+            # IT Team Days
             if rec.it_approval_date and rec.done_date:
                 delta = rec.done_date - rec.it_approval_date
                 rec.it_team_processing_days = delta.total_seconds() / 86400
@@ -249,7 +338,11 @@ class ITTicket(models.Model):
         for rec in self:
             if rec.submitted_date and rec.manager_approval_date:
                 delta = rec.manager_approval_date - rec.submitted_date
-                rec.manager_processing_time = delta.total_seconds() / 3600
+                rec.manager_processing_time = delta.total_seconds() / 3600  # in hours
+                _logger.info(
+                    "manager_processing_time: %s", rec.manager_processing_time
+                )
+
             else:
                 rec.manager_processing_time = 0
 
@@ -258,16 +351,23 @@ class ITTicket(models.Model):
         for rec in self:
             if rec.manager_approval_date and rec.it_approval_date:
                 delta = rec.it_approval_date - rec.manager_approval_date
-                rec.it_processing_time = delta.total_seconds() / 3600
+                rec.it_processing_time = delta.total_seconds() / 3600  # in hours
+                _logger.info(
+                    "it_manager_processing_time: %s", rec.it_processing_time
+                )
             else:
                 rec.it_processing_time = 0
 
     @api.depends('it_approval_date', 'done_date', 'state')
     def _compute_it_team_processing_time(self):
         for rec in self:
+            # Only calculate if assigned/in_progress/done
             if rec.it_approval_date and rec.done_date:
                 delta = rec.done_date - rec.it_approval_date
                 rec.it_team_processing_time = delta.total_seconds() / 3600
+                _logger.info(
+                    "it_team_processing_time: %s", rec.it_team_processing_time
+                )
             else:
                 rec.it_team_processing_time = 0
 
@@ -277,44 +377,78 @@ class ITTicket(models.Model):
             if rec.submitted_date and rec.done_date:
                 delta = rec.done_date - rec.submitted_date
                 rec.total_resolution_time = delta.total_seconds() / 3600
+                _logger.info(
+                    "total_resolution_time: %s", rec.total_resolution_time
+                )
             else:
                 rec.total_resolution_time = 0
 
     @api.depends('employee_id')
     def _compute_show_line_manager(self):
         for ticket in self:
+            _logger.info("Ticket: %s | Employee: %s", ticket.id,
+                         ticket.employee_id.name if ticket.employee_id else None)
             if ticket.employee_id and ticket.employee_id.parent_id:
                 manager_email = ticket.employee_id.parent_id.work_email
+                _logger.info("Line Manager Email: %s", manager_email)
                 if manager_email:
                     user = self.env['res.users'].search([('email', '=', manager_email)], limit=1)
                     if user:
+                        _logger.info("Found user: %s | ID: %s", user.name, user.id)
                         ticket.line_manager_user_id = user.id
                     else:
+                        _logger.warning("No user found with email: %s", manager_email)
                         ticket.line_manager_user_id = False
                 else:
+                    _logger.warning("Line manager has no email")
                     ticket.line_manager_user_id = False
             else:
+                _logger.info("No employee or parent (line manager) for ticket")
                 ticket.line_manager_user_id = False
 
     @api.depends('line_manager_id')
     def _compute_user_roles(self):
         for rec in self:
+            # 🔍 DEBUG LOG
+            _logger.info(
+                "line_manager_id.user_id: %s | self.env.user: %s | rec.line_manager_id: %s",
+                rec.line_manager_id.user_id,
+                self.env.user,
+                rec.line_manager_id,
+            )
             rec.is_line_manager = (
                 rec.line_manager_id == self.env.user
                 if rec.line_manager_id
                 else False
             )
-            rec.is_it_manager = self.env.user.has_group('ticketing_it.group_it_manager')
+
+            rec.is_it_manager = self.env.user.has_group(
+                'ticketing_it.group_it_manager'
+            )
+
+            # 🔍 DEBUG LOG
+            _logger.info(
+                "Ticket: %s | User: %s | is_line_manager: %s | is_it_manager: %s",
+                rec.name,
+                self.env.user.name,
+                rec.is_line_manager,
+                rec.is_it_manager
+            )
 
     @api.depends('state')
     def _compute_show_to_it_manager(self):
         for ticket in self:
             ticket.show_it_manager = ticket.state not in ['draft', 'manager_approval']
+            # DEBUG LOGGING
+            _logger.info("Ticket ID: %s | State: %s | Visible to IT Manager: %s",
+                         ticket.id, ticket.state, ticket.show_it_manager)
 
     @api.depends('state')
     def _compute_show_to_it_team(self):
         for ticket in self:
             ticket.show_it_teams = ticket.state in ['assigned', 'done']
+            _logger.info("Ticket ID: %s | State: %s | Visible to IT team: %s",
+                         ticket.id, ticket.state, ticket.show_it_teams)
 
     @api.depends()
     def _compute_allowed_it_users(self):
@@ -323,31 +457,52 @@ class ITTicket(models.Model):
             ticket.allowed_it_users = it_team_group.user_ids
 
     def _get_from_email(self):
+        """
+        Get central FROM email from Odoo settings.
+        Admin sets once in Settings → General Settings → Default From Email.
+        Never hardcoded in code.
+        """
         ICP = self.env['ir.config_parameter'].sudo()
         default_from = ICP.get_param('mail.default.from')
         catchall_domain = ICP.get_param('mail.catchall.domain')
+
         if default_from:
             if catchall_domain and '@' not in default_from:
                 return '{}@{}'.format(default_from, catchall_domain)
             return default_from
+
         company_email = self.env.company.email
         if company_email:
             return company_email
+
         return False
 
     # =========================================================
     # HELPER: FIND IT MANAGER VIA SQL
+    # Uses raw SQL on res_groups_users_rel table.
+    # This is the ONLY reliable method in all Odoo 17 versions.
+    # groups_id domain search is broken in this Odoo build.
+    # Admin assigns IT Manager in Settings → Users → Groups button.
+    # No names or emails hardcoded anywhere.
     # =========================================================
 
     def _find_it_manager(self):
+        """
+        Find IT Manager user via direct SQL on the groups-users relation table.
+        Works in all Odoo 17 versions — avoids the broken groups_id domain search.
+        """
         it_manager_group = self.env.ref(
             'ticketing_it.group_it_manager',
             raise_if_not_found=False
         )
         if not it_manager_group:
-            _logger.error("IT Manager group 'ticketing_it.group_it_manager' not found.")
+            _logger.error(
+                "IT Manager group 'ticketing_it.group_it_manager' not found. "
+                "Check security/security.xml in your module."
+            )
             return False
 
+        # Direct SQL — bypasses the broken domain search entirely
         self.env.cr.execute("""
             SELECT ru.id
             FROM res_users ru
@@ -362,89 +517,25 @@ class ITTicket(models.Model):
         row = self.env.cr.fetchone()
         if row:
             user = self.env['res.users'].sudo().browse(row[0])
-            _logger.info("IT Manager found via SQL: %s | Email: %s", user.name, user.email)
+            _logger.info(
+                "IT Manager found via SQL: %s | Email: %s",
+                user.name, user.email
+            )
             return user
 
-        _logger.warning("No IT Manager found in group.")
+        _logger.warning(
+            "No IT Manager found in group. "
+            "Go to Settings → Users → [your IT manager user] → "
+            "Groups button → Add 'IT Manager' group."
+        )
         return False
-
-    # =========================================================
-    # EMAIL HELPERS — Odoo 17 hosted fix
-    # Bypasses partner_id override bug — sends mail.mail directly
-    # =========================================================
-
-    def _send_ticket_email(self, recipient_partner, subject, body):
-        """
-        Send email directly using mail.mail.
-        Bypasses Odoo 17 hosted bug where template.send_mail() always
-        sends to ticket.partner_id instead of the intended recipient.
-        """
-        if not recipient_partner or not recipient_partner.email:
-            _logger.warning("No recipient email for ticket %s", self.name)
-            return
-        mail = self.env['mail.mail'].sudo().create({
-            'subject': subject,
-            'body_html': body,
-            'email_to': recipient_partner.email,
-            'recipient_ids': [(4, recipient_partner.id)],
-            'model': 'it.ticket',
-            'res_id': self.id,
-        })
-        mail.send()
-        _logger.info("Email sent to %s for ticket %s", recipient_partner.email, self.name)
-
-    def _build_ticket_email_body(self, header_color, header_title,
-                                  button_color, button_url,
-                                  recipient_name, intro_text, rows):
-        """
-        Build fully rendered HTML email with big VIEW IT SUPPORT TICKET button.
-        rows = list of (label, value) tuples.
-        All values are pre-rendered Python strings — no Odoo template engine used.
-        """
-        rows_html = ""
-        for i, (label, value) in enumerate(rows):
-            bg = ' style="background-color: #f2f2f2;"' if i % 2 == 0 else ''
-            rows_html += f"""
-            <tr{bg}>
-                <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>{label}</strong></td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{value or ''}</td>
-            </tr>"""
-
-        return f"""
-<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-    <div style="background-color: {header_color}; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h2 style="color: white; margin: 0;">{header_title}</h2>
-    </div>
-    <div style="background-color: #f0f4f8; padding: 30px; text-align: center;
-                border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
-        <p style="margin: 0 0 20px 0; font-size: 15px; color: #555;">
-            Click below to view and take action on this ticket
-        </p>
-        <a href="{button_url}"
-           style="display: inline-block; background-color: {button_color}; color: white;
-                  text-decoration: none; padding: 20px 60px; border-radius: 8px;
-                  font-size: 20px; font-weight: bold; letter-spacing: 1px;
-                  box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            VIEW IT SUPPORT TICKET
-        </a>
-    </div>
-    <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
-        <p>Dear <strong>{recipient_name}</strong>,</p>
-        <p>{intro_text}</p>
-        <table style="border-collapse: collapse; width: 100%; margin: 15px 0;">
-            {rows_html}
-        </table>
-        <p style="color: grey; font-size: 12px; text-align: center;">
-            This is an automated notification. Please do not reply.
-        </p>
-    </div>
-</div>"""
 
     # =========================================================
     # DISPLAY NAME
     # =========================================================
 
     def _compute_display_name(self):
+        """Odoo 17+ uses _compute_display_name instead of name_get"""
         for record in self:
             name = record.name or 'New'
             if record.subject:
@@ -457,17 +548,19 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _get_current_employee(self):
+        """Get current user's employee record"""
         return self.env['hr.employee'].search(
             [('user_id', '=', self.env.user.id)],
             limit=1
         )
 
     # =========================================================
-    # COMPUTE LINE/IT MANAGER
+    # COMPUTE METHODS
     # =========================================================
 
     @api.depends('employee_id', 'employee_id.parent_id', 'employee_id.parent_id.user_id')
     def _compute_line_manager(self):
+        """Compute line manager from employee's parent"""
         for rec in self:
             if rec.employee_id and rec.employee_id.parent_id and rec.employee_id.parent_id.user_id:
                 rec.line_manager_id = rec.employee_id.parent_id.user_id
@@ -476,6 +569,10 @@ class ITTicket(models.Model):
 
     @api.depends('department_id')
     def _compute_it_manager(self):
+        """
+        Get IT Manager via SQL — safe for all Odoo 17 versions.
+        groups_id domain search is broken in this Odoo build, so we use SQL.
+        """
         it_manager = self._find_it_manager()
         for rec in self:
             rec.it_manager_id = it_manager if it_manager else False
@@ -486,25 +583,79 @@ class ITTicket(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+
         for vals in vals_list:
+
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or 'New'
 
+            ticket_type_id = vals.get('ticket_type_id')
+            workflow_level = self._get_workflow_level(ticket_type_id)
+
+            # ✅ Workflow 0 → Direct assign
+            if workflow_level == '0':
+
+                it_team = self.env.ref('ticketing_it.group_it_team')
+
+                first_user = False
+                if it_team and it_team.user_ids:
+                    first_user = it_team.user_ids[0]
+
+                vals.update({
+                    'state': 'assigned',
+                    'assigned_to_id': first_user.id if first_user else False,
+                    'submitted_date': fields.Datetime.now(),
+                })
+
+            # ✅ Workflow 1 → IT Manager
+            elif workflow_level == '1':
+                vals['state'] = 'it_approval'
+
+            # ✅ Workflow 2 → Line Manager
+            else:
+                vals['state'] = 'manager_approval'
+
+            # Social media duration
+            ticket_type_record = self.env['it.ticket.type'].browse(vals.get('ticket_type_id'))
+
+            if ticket_type_record.code == 'social_media':
+                duration = self.env['ir.config_parameter'].sudo().get_param(
+                    'it_ticket.social_media_duration', '3m'
+                )
+                vals['duration'] = duration
+
         records = super().create(vals_list)
 
+        # ❌ REMOVE THIS BLOCK (IMPORTANT)
+        # It is breaking your workflow
+        """
         for record in records:
             if record.env.user.has_group('base.group_portal'):
                 if record.ticket_type == 'hardware':
                     record.action_submit_to_it_manager()
                 else:
                     record.action_submit()
+        """
 
         return records
+
+    def _get_workflow_level(self, ticket_type_id):
+
+        config = self.env['it.ticket.workflow.config'].search(
+            [('ticket_type_id', '=', ticket_type_id)],
+            limit=1
+        )
+
+        if config:
+            return config.workflow_level
+
+        return '2'
 
     # ===== NEW METHOD =====
     def action_submit_to_it_manager(self):
         """Hardware tickets go directly to IT Manager approval"""
         for rec in self:
+
             if not rec.it_manager_id:
                 raise ValidationError(_("No IT Manager configured."))
 
@@ -513,33 +664,17 @@ class ITTicket(models.Model):
                 'submitted_date': fields.Datetime.now(),
             })
 
-            priority_label = dict(rec._fields['priority'].selection).get(rec.priority, rec.priority)
-            type_label = dict(rec._fields['ticket_type'].selection).get(rec.ticket_type, rec.ticket_type)
-
-            body = rec._build_ticket_email_body(
-                header_color='#2980b9',
-                header_title='IT Manager Approval Required',
-                button_color='#2980b9',
-                button_url=f'/odoo/it-tickets/{rec.id}',
-                recipient_name=rec.it_manager_id.name,
-                intro_text='A hardware IT ticket has been submitted and requires your approval.',
-                rows=[
-                    ('Ticket Number', rec.name),
-                    ('Subject', rec.subject),
-                    ('Raised By', rec.employee_id.name),
-                    ('Type', type_label),
-                    ('Priority', priority_label),
-                    ('Required By', str(rec.required_date) if rec.required_date else 'Not specified'),
-                ],
-            )
-            rec._send_ticket_email(
-                recipient_partner=rec.it_manager_id.partner_id,
-                subject=f'IT Approval Required: {rec.name}',
-                body=body,
+            rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=rec.it_manager_id.id,
+                summary=_('Hardware Ticket Approval Required: %s') % rec.name,
+                note=_('Hardware ticket submitted by %s. Please approve and assign.')
+                     % rec.employee_id.name
             )
 
             rec.message_post(
-                body=_("Hardware ticket submitted directly to IT Manager: %s") % rec.it_manager_id.name
+                body=_("Hardware ticket submitted directly to IT Manager: %s")
+                     % rec.it_manager_id.name
             )
 
     def action_assign_to_it_team(self):
@@ -550,25 +685,20 @@ class ITTicket(models.Model):
                 'submitted_date': fields.Datetime.now(),
             })
 
-            body = rec._build_ticket_email_body(
-                header_color='#27ae60',
-                header_title='Your Ticket Has Been Assigned',
-                button_color='#27ae60',
-                button_url=f'/my/tickets/{rec.id}',
-                recipient_name=rec.employee_id.name,
-                intro_text='Your IT ticket has been approved and assigned to the IT team. They will begin working on it shortly.',
-                rows=[
-                    ('Ticket Number', rec.name),
-                    ('Subject', rec.subject),
-                    ('Status', 'Assigned to IT Team'),
-                    ('Priority', dict(rec._fields['priority'].selection).get(rec.priority, rec.priority)),
-                ],
+            template = self.env.ref(
+                'ticketing_it.email_template_it_assigned',
+                raise_if_not_found=False
             )
-            rec._send_ticket_email(
-                recipient_partner=rec.employee_id.user_id.partner_id,
-                subject=f'Your Ticket Has Been Assigned: {rec.name}',
-                body=body,
-            )
+            if template:
+                template.send_mail(rec.id, force_send=True)
+
+            if rec.it_manager_id:
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.it_manager_id.id,
+                    summary=_('Hardware Ticket - Assign to IT Team: %s') % rec.name,
+                    note=_('Hardware issue reported by %s. Please assign to IT team member.') % rec.employee_id.name
+                )
 
             rec.message_post(
                 body=_("Hardware ticket automatically assigned to IT Team for immediate action.")
@@ -577,47 +707,173 @@ class ITTicket(models.Model):
     # =========================================================
     # WORKFLOW METHODS - APPROVE/REJECT
     # =========================================================
-
     def action_submit(self):
-        """Submit ticket to line manager for approval"""
+
         for rec in self:
-            if not rec.line_manager_id:
-                raise ValidationError(
-                    _("No line manager found for employee: %s") % rec.employee_id.name
+
+            config = self.env['it.ticket.workflow.config'].search(
+                [('ticket_type_id', '=', rec.ticket_type_id.id)],
+                limit=1
+            )
+
+            workflow = config.workflow_level if config else '2'
+
+            # Workflow 0 → Direct to IT team
+            if workflow == '0':
+
+                it_team = self.env.ref('ticketing_it.group_it_team')
+
+                first_user = False
+                if it_team and it_team.user_ids:
+                    first_user = it_team.user_ids[0]
+
+                rec.write({
+                    'state': 'assigned',
+                    'assigned_to_id': first_user.id if first_user else False,
+                    'submitted_date': fields.Datetime.now()
+                })
+                return
+
+            # Workflow 1 → IT Manager
+            elif workflow == '1':
+
+                if not rec.it_manager_id:
+                    raise ValidationError(_("No IT Manager configured"))
+
+                rec.write({
+                    'state': 'it_approval',
+                    'submitted_date': fields.Datetime.now()
+                })
+
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.it_manager_id.id,
+                    summary=_('Ticket Approval Required: %s') % rec.name,
                 )
 
-            rec.state = 'manager_approval'
-            rec.submitted_date = fields.Datetime.now()
+            # Workflow 2 → Line Manager
+            elif workflow == '2':
 
-            priority_label = dict(rec._fields['priority'].selection).get(rec.priority, rec.priority)
-            type_label = dict(rec._fields['ticket_type'].selection).get(rec.ticket_type, rec.ticket_type)
+                if not rec.line_manager_id:
+                    raise ValidationError(_("No line manager found"))
 
-            body = rec._build_ticket_email_body(
-                header_color='#2c3e50',
-                header_title='IT Ticket - Approval Required',
-                button_color='#e67e22',
-                button_url=f'/odoo/it-tickets/{rec.id}',
-                recipient_name=rec.line_manager_id.name,
-                intro_text='An IT ticket has been submitted by your team member and requires your approval.',
-                rows=[
-                    ('Ticket Number', rec.name),
-                    ('Subject', rec.subject),
-                    ('Raised By', rec.employee_id.name),
-                    ('Type', type_label),
-                    ('Priority', priority_label),
-                    ('Required By', str(rec.required_date) if rec.required_date else 'Not specified'),
-                ],
-            )
-            rec._send_ticket_email(
-                recipient_partner=rec.line_manager_id.partner_id,
-                subject=f'Action Required: IT Ticket Approval - {rec.name}',
-                body=body,
-            )
+                rec.write({
+                    'state': 'manager_approval',
+                    'submitted_date': fields.Datetime.now()
+                })
 
-            rec.message_post(
-                body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
-            )
+                rec.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=rec.line_manager_id.id,
+                    summary=_('Ticket Approval Required: %s') % rec.name,
+                )
 
+    # def action_submit(self):
+    #     """Submit ticket to line manager for approval"""
+    #     for rec in self:
+    #         if not rec.line_manager_id:
+    #             raise ValidationError(
+    #                 _("No line manager found for employee: %s") % rec.employee_id.name
+    #             )
+    #
+    #         rec.state = 'manager_approval'
+    #         rec.submitted_date = fields.Datetime.now()
+    #
+    #         template = self.env.ref(
+    #             'ticketing_it.email_template_manager_approval',
+    #             raise_if_not_found=False
+    #         )
+    #         if template:
+    #             template.send_mail(rec.id, force_send=True)
+    #
+    #         rec.activity_schedule(
+    #             'mail.mail_activity_data_todo',
+    #             user_id=rec.line_manager_id.id,
+    #             summary=_('Ticket Approval Required: %s') % rec.name,
+    #             note=_('Please review and approve IT ticket from %s') % rec.employee_id.name
+    #         )
+    #
+    #         rec.message_post(
+    #             body=_("Ticket submitted to Line Manager: %s") % rec.line_manager_id.name
+    #         )
+
+    # def action_manager_approve(self):
+    #     """Line manager approves ticket — sends email to IT manager"""
+    #     for rec in self:
+    #         if self.env.user != rec.line_manager_id:
+    #             raise UserError(
+    #                 _("Only the line manager (%s) can approve this ticket") % rec.line_manager_id.name
+    #             )
+    #
+    #         rec.state = 'it_approval'
+    #         rec.manager_approval_date = fields.Datetime.now()
+    #
+    #         rec.activity_unlink(['mail.mail_activity_data_todo'])
+    #
+    #         # Always re-fetch IT manager via SQL at approval time
+    #         # This fixes old tickets where it_manager_id was empty
+    #         if not rec.it_manager_id:
+    #             it_manager = rec._find_it_manager()
+    #             if it_manager:
+    #                 rec.sudo().write({'it_manager_id': it_manager.id})
+    #
+    #         if rec.it_manager_id:
+    #             template = self.env.ref(
+    #                 'ticketing_it.email_template_it_approval',
+    #                 raise_if_not_found=False
+    #             )
+    #             if template:
+    #                 template.send_mail(rec.id, force_send=True)
+    #                 _logger.info(
+    #                     "IT approval email sent to %s (%s) for ticket %s",
+    #                     rec.it_manager_id.name,
+    #                     rec.it_manager_id.email,
+    #                     rec.name
+    #                 )
+    #
+    #             rec.activity_schedule(
+    #                 'mail.mail_activity_data_todo',
+    #                 user_id=rec.it_manager_id.id,
+    #                 summary=_('IT Approval Required: %s') % rec.name,
+    #                 note=_('Ticket approved by line manager. Please review.')
+    #             )
+    #
+    #             rec.message_post(
+    #                 body=_("Approved by Line Manager: %s. Sent to IT Manager: %s") % (
+    #                     self.env.user.name,
+    #                     rec.it_manager_id.name
+    #                 )
+    #             )
+    #         else:
+    #             rec.message_post(
+    #                 body=_("Approved by Line Manager: %s. WARNING: No IT Manager found — "
+    #                        "please assign a user to the IT Manager group.") % self.env.user.name
+    #             )
+    #
+    # def action_it_approve(self):
+    #     """IT manager approves ticket - assigns to IT team"""
+    #     for rec in self:
+    #         if not self.env.user.has_group('ticketing_it.group_it_manager'):
+    #             raise UserError(_("Only IT managers can approve this ticket"))
+    #         if not rec.assigned_to_id:
+    #             raise ValidationError(
+    #                 _("You must select 'Assigned To' before approving.")
+    #             )
+    #         rec.state = 'assigned'
+    #         rec.it_approval_date = fields.Datetime.now()
+    #
+    #         rec.activity_unlink(['mail.mail_activity_data_todo'])
+    #
+    #         template = self.env.ref(
+    #             'ticketing_it.email_template_it_assigned',
+    #             raise_if_not_found=False
+    #         )
+    #         if template:
+    #             template.send_mail(rec.id, force_send=True)
+    #
+    #         rec.message_post(
+    #             body=_("Approved by IT Manager: %s. Assigned to IT Team.") % self.env.user.name
+    #         )
     def action_manager_approve(self):
         self.ensure_one()
         if self.env.user != self.line_manager_id:
@@ -647,11 +903,24 @@ class ITTicket(models.Model):
             'target': 'new',
             'context': {'default_ticket_id': self.id}
         }
+    def action_it_approve(self):
+        self.ensure_one()
+        if not self.env.user.has_group('ticketing_it.group_it_manager'):
+            raise UserError(_("Only IT managers can approve this ticket"))
+        return {
+            'name': _('Approve Ticket'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'it.ticket.approve.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_ticket_id': self.id}
+        }
 
     def action_reject(self):
         """Open wizard to reject ticket with reason."""
         self.ensure_one()
         self._check_reject_access()
+
         return {
             'name': _('Reject Ticket'),
             'type': 'ir.actions.act_window',
@@ -662,8 +931,10 @@ class ITTicket(models.Model):
         }
 
     def _check_reject_access(self):
+        """Verify the current user is allowed to reject this ticket."""
         self.ensure_one()
         user = self.env.user
+
         if self.state == 'manager_approval':
             if user != self.line_manager_id:
                 raise UserError(
@@ -693,26 +964,12 @@ class ITTicket(models.Model):
 
             rec.activity_unlink(['mail.mail_activity_data_todo'])
 
-            body = rec._build_ticket_email_body(
-                header_color='#c0392b',
-                header_title='IT Ticket Rejected',
-                button_color='#c0392b',
-                button_url=f'/my/tickets/{rec.id}',
-                recipient_name=rec.employee_id.name,
-                intro_text='Unfortunately your IT ticket has been rejected.',
-                rows=[
-                    ('Ticket Number', rec.name),
-                    ('Subject', rec.subject),
-                    ('Rejected By', rec.rejected_by_id.name),
-                    ('Rejection Date', str(rec.rejected_date)),
-                    ('Reason', rec.rejection_reason or 'No reason provided'),
-                ],
+            template = self.env.ref(
+                'ticketing_it.email_template_rejection',
+                raise_if_not_found=False
             )
-            rec._send_ticket_email(
-                recipient_partner=rec.employee_id.user_id.partner_id,
-                subject=f'IT Ticket Rejected: {rec.name}',
-                body=body,
-            )
+            if template:
+                template.send_mail(rec.id, force_send=True)
 
             rec.message_post(
                 body=_("Ticket rejected by %s<br/>Reason: %s") % (self.env.user.name, reason)
@@ -726,6 +983,7 @@ class ITTicket(models.Model):
         for rec in self:
             if rec.assigned_to_id != self.env.user:
                 raise UserError(_("This ticket is not assigned to you."))
+
             rec.state = 'in_progress'
             rec.sudo().message_post(
                 body=_("Work started by %s") % self.env.user.name
@@ -733,29 +991,39 @@ class ITTicket(models.Model):
 
     def action_done(self):
         """Mark ticket as done"""
+
         for rec in self:
             rec.state = 'done'
             rec.done_date = fields.Datetime.now()
+            _logger.info("rec.done_date: %s", rec.done_date)
+            # ✅ Start access duration for social media tickets
+            if rec.ticket_type_id.code == 'social_media' and rec.duration:
 
-            body = rec._build_ticket_email_body(
-                header_color='#27ae60',
-                header_title='Your IT Ticket Is Resolved',
-                button_color='#27ae60',
-                button_url=f'/my/tickets/{rec.id}',
-                recipient_name=rec.employee_id.name,
-                intro_text='Your IT ticket has been resolved and completed.',
-                rows=[
-                    ('Ticket Number', rec.name),
-                    ('Subject', rec.subject),
-                    ('Completed On', str(rec.done_date)),
-                    ('Resolved By', rec.assigned_to_id.name if rec.assigned_to_id else 'IT Team'),
-                ],
+                # start_date = fields.Date.today()
+                start_date = rec.done_date
+                rec.access_start_date = start_date
+                _logger.info("start_date: %s", start_date)
+                _logger.info("rec.access_start_date: %s", rec.access_start_date)
+                if rec.duration == '3m':
+                    # rec.access_end_date = start_date + timedelta(minutes=3)
+                    rec.access_finish_date = start_date + timedelta(minutes=3)
+
+                elif rec.duration == '6m':
+                    # rec.access_end_date = start_date + timedelta(minutes=6)
+                    rec.access_finish_date = start_date + timedelta(minutes=6)
+
+                elif rec.duration == '12m':
+                    # rec.access_end_date = start_date + timedelta(minutes=12)
+                    rec.access_finish_date = start_date + timedelta(minutes=12)
+
+                _logger.info("rec.access_finish_date: %s", rec.access_finish_date)
+            template = self.env.ref(
+                'ticketing_it.email_template_done',
+                raise_if_not_found=False
             )
-            rec._send_ticket_email(
-                recipient_partner=rec.employee_id.user_id.partner_id,
-                subject=f'IT Ticket Completed: {rec.name}',
-                body=body,
-            )
+
+            if template:
+                template.send_mail(rec.id, force_send=True)
 
             rec.message_post(
                 body=_("Ticket completed by %s and employee notified") % self.env.user.name
@@ -766,12 +1034,20 @@ class ITTicket(models.Model):
     # =========================================================
 
     def action_send_manager_reminder(self):
+        """
+        Called by scheduled action every 24 hours.
+        Sends reminder email to line manager for pending tickets.
+        FROM email read dynamically from Odoo Settings — never hardcoded.
+        """
         if not self:
             pending_tickets = self.search([('state', '=', 'manager_approval')])
         else:
             pending_tickets = self
 
-        _logger.info("24hr Reminder: Found %d tickets pending manager approval.", len(pending_tickets))
+        _logger.info(
+            "24hr Reminder: Found %d tickets pending manager approval.",
+            len(pending_tickets)
+        )
 
         for ticket in pending_tickets:
             try:
@@ -784,36 +1060,57 @@ class ITTicket(models.Model):
 
                 manager = ticket.line_manager_id
 
-                body = ticket._build_ticket_email_body(
-                    header_color='#e74c3c',
-                    header_title='Approval Reminder',
-                    button_color='#e74c3c',
-                    button_url=f'/odoo/it-tickets/{ticket.id}',
-                    recipient_name=manager.name,
-                    intro_text='This is a <strong style="color: #e74c3c;">24-hour reminder</strong> that the following IT ticket is still pending your approval. You will continue receiving this reminder every 24 hours until you approve or reject.',
-                    rows=[
-                        ('Ticket Number', ticket.name),
-                        ('Subject', ticket.subject),
-                        ('Raised By', ticket.employee_id.name),
-                        ('Submitted On', str(ticket.submitted_date)),
-                        ('Last Reminder Sent', str(ticket.last_reminder_sent) if ticket.last_reminder_sent else 'First reminder'),
-                    ],
+                template = self.env.ref(
+                    'ticketing_it.email_template_manager_reminder_24hr',
+                    raise_if_not_found=False
                 )
-                ticket._send_ticket_email(
-                    recipient_partner=manager.partner_id,
-                    subject=f'Reminder: IT Ticket Awaiting Your Approval - {ticket.name}',
-                    body=body,
-                )
+
+                if template:
+                    template.send_mail(ticket.id, force_send=True)
+                    _logger.info(
+                        "24hr reminder sent → Ticket: %s | Manager: %s (%s)",
+                        ticket.name, manager.name, manager.email
+                    )
+                else:
+                    from_email = ticket._get_from_email()
+                    mail_values = {
+                        'subject': _('Reminder: IT Ticket Awaiting Your Approval - %s') % ticket.name,
+                        'body_html': '''
+                            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                                <h2 style="color: #e74c3c;">Approval Reminder</h2>
+                                <p>Dear <strong>{manager}</strong>,</p>
+                                <p>Ticket <strong>{name}</strong> raised by
+                                <strong>{employee}</strong> is still pending your approval.</p>
+                                <p>Please log in and approve or reject immediately.</p>
+                                <p style="color:grey; font-size:12px;">
+                                    You will receive this reminder every 24 hours
+                                    until you take action.
+                                </p>
+                            </div>
+                        '''.format(
+                            manager=manager.name,
+                            name=ticket.name,
+                            employee=ticket.employee_id.name,
+                        ),
+                        'email_to': manager.email,
+                        'email_from': from_email,
+                    }
+                    mail = self.env['mail.mail'].sudo().create(mail_values)
+                    mail.send()
 
                 ticket.sudo().write({'last_reminder_sent': fields.Datetime.now()})
                 ticket.message_post(
-                    body=_("24-hour reminder sent to line manager <strong>%s</strong> (%s).")
-                         % (manager.name, manager.email),
+                    body=_(
+                        "24-hour reminder sent to line manager <strong>%s</strong> (%s)."
+                    ) % (manager.name, manager.email),
                     message_type='notification',
                 )
 
             except Exception as e:
-                _logger.error("Failed to send 24hr reminder for ticket %s: %s", ticket.name, str(e))
+                _logger.error(
+                    "Failed to send 24hr reminder for ticket %s: %s",
+                    ticket.name, str(e)
+                )
                 continue
 
     # =========================================================
@@ -821,6 +1118,7 @@ class ITTicket(models.Model):
     # =========================================================
 
     def _compute_access_url(self):
+        """Portal URL for employees to view their tickets"""
         super()._compute_access_url()
         for ticket in self:
             ticket.access_url = '/my/tickets/%s' % ticket.id
@@ -830,7 +1128,7 @@ class ITTicket(models.Model):
         for rec in self:
             if rec.create_date and rec.done_date:
                 delta = rec.done_date - rec.create_date
-                rec.resolution_time = delta.total_seconds() / 60
+                rec.resolution_time = delta.total_seconds() / (60)  # convert seconds to days
             else:
                 rec.resolution_time = 0
 
@@ -842,25 +1140,38 @@ class ITTicket(models.Model):
             else:
                 rec.month_solved = 'N/A'
 
-    @api.constrains('assigned_to_id')
-    def _check_assigned_to_access(self):
-        for rec in self:
-            if rec.assigned_to_id:
-                if not self.env.user.has_group('ticketing_it.group_it_manager'):
-                    raise ValidationError(_("Only IT Managers can assign tickets."))
+    # @api.constrains('assigned_to_id')
+    # def _check_assigned_to_access(self):
+    #     for rec in self:
+    #         if rec.assigned_to_id:
+    #             if not self.env.user.has_group('ticketing_it.group_it_manager'):
+    #                 raise ValidationError(
+    #                     _("Only IT Managers can assign tickets.")
+    #                 )
 
     # ===== HARD SECURITY =====
     def write(self, vals):
+
+        # ----------------------------
+        # ASSIGNMENT SECURITY
+        # ----------------------------
         if 'assigned_to_id' in vals:
             if not self.env.user.has_group('ticketing_it.group_it_manager'):
                 raise AccessError("Only IT Manager can assign tickets.")
 
+        # ----------------------------
+        # STATE CHANGE DATE TRACKING
+        # ----------------------------
         if 'state' in vals:
             new_state = vals.get('state')
             now = fields.Datetime.now()
+
             for record in self:
+                # If moving to manager approval
                 if new_state == 'manager_approval' and record.state != 'manager_approval':
                     vals['manager_approval_date'] = now
+
+                # If moving to IT approval
                 if new_state == 'it_approval' and record.state != 'it_approval':
                     vals['it_approval_date'] = now
 
@@ -884,7 +1195,9 @@ class ITTicket(models.Model):
         now = fields.Datetime.now()
         _logger.info("Current time: %s", now)
 
-        tickets = self.search([('state', 'in', ['manager_approval', 'it_approval'])])
+        tickets = self.search([
+            ('state', 'in', ['manager_approval', 'it_approval'])
+        ])
         _logger.info("Total tickets found in approval states: %s", len(tickets))
 
         user_ticket_map = defaultdict(list)
@@ -893,11 +1206,16 @@ class ITTicket(models.Model):
             _logger.info("Checking Ticket: %s | State: %s", ticket.name, ticket.state)
 
             if ticket.state == 'manager_approval':
+                _logger.info("Manager approval date %s", ticket.manager_approval_date)
                 state_date = ticket.manager_approval_date
                 user = ticket.line_manager_id
+                _logger.info("ticket.line_manager_id %s", ticket.line_manager_id)
+
             elif ticket.state == 'it_approval':
+                _logger.info("IT Manager approval date %s", ticket.it_approval_date)
                 state_date = ticket.it_approval_date
                 user = ticket.it_manager_id
+
             else:
                 continue
 
@@ -905,19 +1223,24 @@ class ITTicket(models.Model):
                 _logger.warning("Skipping ticket due to missing state_date or user")
                 continue
 
+            # Compute minutes only (ignore seconds)
             minutes_in_state = int((now - state_date).total_seconds() / 60)
             _logger.info("Minutes in state: %s", minutes_in_state)
-
+            _logger.info("reminder_minutes: %s", reminder_minutes)
+            # Check if reminder threshold is reached
             if minutes_in_state < reminder_minutes:
                 _logger.info("Skipping - Not enough time passed")
                 continue
-
+            _logger.info("ticket.last_reminder_sent: %s", ticket.last_reminder_sent)
             if ticket.last_reminder_sent:
                 minutes_since_last = int((now - ticket.last_reminder_sent).total_seconds() / 60)
+                _logger.info("Minutes since last reminder: %s", minutes_since_last)
+
                 if minutes_since_last < reminder_minutes:
                     _logger.info("Skipping - Reminder already sent recently")
                     continue
 
+            _logger.info("Adding ticket to user group: %s", user.name)
             user_ticket_map[user].append(ticket)
 
         _logger.info("Users to notify: %s", len(user_ticket_map))
@@ -927,89 +1250,141 @@ class ITTicket(models.Model):
 
             ticket_list_html = "<ul>"
             for ticket in user_tickets:
-                ticket_list_html += f"<li>{ticket.name} — {ticket.subject or ''}</li>"
+                ticket_list_html += f"<li>{ticket.name}</li>"
             ticket_list_html += "</ul>"
 
             body = f"""
-<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-    <div style="background-color: #e67e22; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h2 style="color: white; margin: 0;">Pending Tickets Reminder</h2>
-    </div>
-    <div style="background-color: #fef9f0; padding: 30px; text-align: center;
-                border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
-        <p style="margin: 0 0 20px 0; font-size: 15px; color: #555;">
-            You have pending tickets waiting for your action
-        </p>
-        <a href="/odoo/it-tickets"
-           style="display: inline-block; background-color: #e67e22; color: white;
-                  text-decoration: none; padding: 20px 60px; border-radius: 8px;
-                  font-size: 20px; font-weight: bold; letter-spacing: 1px;
-                  box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            VIEW IT SUPPORT TICKET
-        </a>
-    </div>
-    <div style="border: 1px solid #ddd; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
-        <p>Dear <strong>{user.name}</strong>,</p>
-        <p>You have the following pending tickets to approve:</p>
-        {ticket_list_html}
-        <p style="color: grey; font-size: 12px; text-align: center;">
-            This is an automated notification. Please do not reply.
-        </p>
-    </div>
-</div>"""
+                    <p>Dear {user.name},</p>
+                    <p>You have pending tickets to approve:</p>
+                    {ticket_list_html}
+                """
 
-            self.env['mail.mail'].sudo().create({
+            mail_values = {
                 'subject': 'Pending Ticket Reminder',
                 'body_html': body,
                 'email_to': user.partner_id.email,
-                'recipient_ids': [(4, user.partner_id.id)],
-            }).send()
+            }
+
+            _logger.info("Creating email for: %s | Email: %s", user.name, user.partner_id.email)
+
+            mail = self.env['mail.mail'].sudo().create(mail_values)
+            mail.send()
 
             _logger.info("Email sent to: %s", user.name)
 
             for ticket in user_tickets:
-                ticket.sudo().write({'last_reminder_sent': now})
+                ticket.sudo().write({
+                    'last_reminder_sent': now
+                })
+
                 ticket.message_post(
                     body=_("Consolidated reminder sent to %s") % user.name
-
                 )
-
 
         _logger.info("===== CRON FINISHED =====")
 
-    @api.model
-    def message_new(self, msg, custom_values=None):
-        """
-        Create IT Ticket when email is received.
-        """
+    def check_social_media_expiry(self):
+        now = fields.Datetime.now()
+        one_minute_to_go = now - timedelta(minutes=1)
 
-        name, email = parseaddr(msg.get('from'))
+        _logger.info("CRON START: Checking social media expiry")
+        _logger.info(f"Time window: {one_minute_to_go} → {now}")
 
-        # Find employee using email
-        employee = self.env['hr.employee'].search([
-            ('work_email', '=', email)
-        ], limit=1)
+        tickets = self.search([
+            ('access_finish_date', '>=', one_minute_to_go),
+            ('access_finish_date', '<=', now),
+        ])
 
-        if not employee:
-            raise ValidationError(
-                _("No employee found with email: %s. Please create employee first.") % email
-            )
+        _logger.info(f"Tickets found: {len(tickets)}")
 
-        values = {
-            'name': 'New',
-            'employee_id': employee.id,
-            'subject': msg.get('subject', 'No Subject'),
-            'description': msg.get('body', ''),
-            'ticket_type': 'other',
-            'priority': '1',
-            'state': 'manager_approval',
-            'submitted_date': fields.Datetime.now(),
-            'ticket_source': 'email',
-        }
+        template = self.env.ref(
+            'ticketing_it.email_template_access_end',  # ⚠️ fix module name
+            raise_if_not_found=False
+        )
 
-        if custom_values:
-            values.update(custom_values)
+        if not template:
+            _logger.error("Email template NOT found!")
+            return
 
-        return super().message_new(msg, custom_values=values)
+        for ticket in tickets:
+            _logger.info(f"Processing Ticket ID: {ticket.id}, Name: {ticket.name}")
+
+            users = [
+                ticket.assigned_to_id.id if ticket.assigned_to_id.id else False,
+                ticket.employee_id.user_id.id if ticket.employee_id.user_id.id else False,
+            ]
+
+            users = [u for u in users if u]
+
+            _logger.info(f"Users to notify: {users}")
+
+            if not users:
+                _logger.warning(f"No users found for ticket {ticket.id}")
+                continue
+
+            try:
+                template.send_mail(
+                    ticket.id,
+                    force_send=True,
+                    email_values={
+                        'recipient_ids': [(6, 0, users)]
+                    }
+                )
+                _logger.info(f"Email sent for ticket {ticket.id}")
+
+            except Exception as e:
+                _logger.error(f"Error sending email for ticket {ticket.id}: {str(e)}")
+
+        _logger.info("CRON END")
 
 
+class ITTicketWorkflowConfig(models.Model):
+    _name = 'it.ticket.workflow.config'
+    _description = 'Ticket Workflow Configuration'
+    _rec_name = 'ticket_type_id'
+
+    # ticket_type = fields.Selection([
+    #     ('hardware', 'Hardware Issue'),
+    #     ('software', 'Software Issue'),
+    #     ('social_media', 'Social Media Access'),
+    #     ('network', 'Network Issue'),
+    #     ('other', 'Other'),
+    # ], required=True)
+    ticket_type_id = fields.Many2one(
+        'it.ticket.type',
+        string='Ticket Type Id',
+        required=True,
+        domain="[('id', 'not in', existing_ticket_type_ids)]"
+    )
+
+    workflow_level = fields.Selection([
+        ('0', '0 - Direct to IT Support'),
+        ('1', '1 - IT Manager Approval'),
+        ('2', '2 - Line Manager → IT Manager → IT Support'),
+    ], default='2', required=True)
+    existing_ticket_type_ids = fields.Many2many(
+        'it.ticket.type',
+        compute='_compute_existing_ticket_types'
+    )
+    _sql_constraints = [
+        ('unique_ticket_type_id', 'unique(ticket_type_id)', 'Workflow already defined for this ticket type!')
+    ]
+
+    @api.constrains('ticket_type_id')
+    def _check_unique_ticket_type(self):
+        for rec in self:
+            existing = self.search([
+                ('ticket_type_id', '=', rec.ticket_type_id.id),
+                ('id', '!=', rec.id)
+            ])
+            if existing:
+                raise ValidationError(
+                    "Workflow already exists for this ticket type!"
+                )
+
+    @api.depends()
+    def _compute_existing_ticket_types(self):
+        all_configs = self.search([]).mapped('ticket_type_id')
+
+        for rec in self:
+            rec.existing_ticket_type_ids = all_configs

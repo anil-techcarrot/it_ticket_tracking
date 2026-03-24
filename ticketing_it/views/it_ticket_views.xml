@@ -9,15 +9,13 @@
             <list string="IT Tickets" default_order="create_date desc">
                 <field name="name" string="Ticket #"/>
                 <field name="employee_id"/>
-                <field name="ticket_type"/>
+                <field name="ticket_type_id"/>
                 <field name="priority" widget="priority"/>
                 <field name="state"
                        decoration-success="state=='done'"
                        decoration-danger="state=='rejected'"
                        decoration-warning="state in ['manager_approval','it_approval']"/>
                 <field name="create_date"/>
-
-                <field name="ticket_source" readonly="1"/>
             </list>
         </field>
     </record>
@@ -114,8 +112,15 @@
                         <group>
                             <field name="name" readonly="1"/>
                             <field name="employee_id"/>
-                            <field name="ticket_type"/>
-                            <field name="ticket_source"/>
+                            <field name="ticket_type_id"/>
+                            <field name="duration"
+                                   groups="ticketing_it.group_it_manager"
+                                   invisible="not is_social_media"/>
+
+                            <field name="duration"
+                                   readonly="1"
+                                   groups="!ticketing_it.group_it_manager"
+                                   invisible="not is_social_media"/>
                             <field name="priority" widget="priority"/>
                             <!--                            <field name="done_date"/>-->
                             <field name="submitted_date"/>
@@ -157,6 +162,31 @@
 
                 <chatter/>
             </form>
+        </field>
+    </record>
+    <!-- Open Tickets Graph -->
+    <record id="view_it_ticket_open_graph" model="ir.ui.view">
+        <field name="name">it.ticket.open.graph</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Open Tickets by Type" type="bar">
+                <!-- X-axis: Ticket Type -->
+                <field name="ticket_type_id" type="row"/>
+                <!-- Y-axis: Count -->
+                <field name="open_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_it_ticket_closed_graph" model="ir.ui.view">
+        <field name="name">it.ticket.closed.graph</field>
+        <field name="model">it.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Closed Tickets by Type" type="bar">
+                <!-- X-axis: Ticket Type -->
+                <field name="ticket_type_id" type="row"/>
+                <!-- Y-axis: Count -->
+                <field name="closed_count" type="measure"/>
+            </graph>
         </field>
     </record>
 

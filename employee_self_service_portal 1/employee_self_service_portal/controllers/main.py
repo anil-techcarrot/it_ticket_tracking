@@ -933,11 +933,12 @@ class PortalEmployee(http.Controller):
         line_manager = None
         if employee.parent_id and employee.parent_id.user_id:
             line_manager = employee.parent_id.user_id
-
+        ticket_types = request.env['it.ticket.type'].sudo().search([])
         values = {
             'employee': employee,
             'line_manager': line_manager,
             'page_name': 'ess_dashboard',
+            'ticket_types': ticket_types,
             'error': kw.get('error'),
             'error_msg': kw.get('error_msg', ''),
         }
@@ -1035,7 +1036,7 @@ class PortalEmployee(http.Controller):
         if not employee:
             return request.redirect('/my/ess')
 
-        if not post.get('subject') or not post.get('ticket_type') or not post.get('description'):
+        if not post.get('subject') or not post.get('ticket_type_id') or not post.get('description'):
             return request.redirect('/my/ess/tickets/new?error=1&error_msg=Please+fill+all+required+fields')
 
             # ✅✅✅ ADDED: Required Date Validation
@@ -1052,15 +1053,19 @@ class PortalEmployee(http.Controller):
                     '/my/ess/tickets/new?error=1&error_msg=Required+Date+cannot+be+in+the+past'
                 )
         # ✅✅✅ END ADDED VALIDATION
-
         try:
+            ticket_type_id = post.get('ticket_type_id')
+            if ticket_type_id:
+                ticket_type_id = int(ticket_type_id)
+
             ticket = request.env['it.ticket'].sudo().create({
                 'employee_id': employee.id,
-                'ticket_type': post.get('ticket_type'),
+                'ticket_type_id': ticket_type_id,
                 'priority': post.get('priority', '1'),
                 'subject': post.get('subject'),
                 'description': post.get('description'),
                 'required_date': required_date or False,
+                'submitted_date': fields.Datetime.now(),
             })
             # ====================================================
             # ✅✅✅ ADDED: ATTACHMENT HANDLING

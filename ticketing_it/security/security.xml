@@ -54,7 +54,7 @@
     <record id="rule_it_ticket_it_manager" model="ir.rule">
         <field name="name">IT Manager: Only tickets past line manager stage</field>
         <field name="model_id" ref="model_it_ticket"/>
-        <field name="domain_force">[('it_approval_date', '!=', False)]</field>
+        <field name="domain_force">[('state', 'in', ['assigned', 'rejected', 'done', 'it_approval'])]</field>
         <field name="groups" eval="[(4, ref('ticketing_it.group_it_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>

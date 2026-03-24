@@ -62,7 +62,7 @@
         <field name="name">it.ticket.avg.processing.kanban</field>
         <field name="model">it.ticket.report.processing</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_small_column" default_group_by="ticket_type">
+            <kanban class="o_kanban_small_column" default_group_by="ticket_type_id">
                 <field name="name"/>
                 <field name="manager_processing_days"/>
                 <field name="it_processing_days"/>

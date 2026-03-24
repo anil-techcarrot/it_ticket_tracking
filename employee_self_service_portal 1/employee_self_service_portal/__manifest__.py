@@ -2,7 +2,7 @@
 {
     "name": "Employee Self Service Portal MLR",
     "version": "19.1.5",
-    "depends": ["portal", "hr", "hr_attendance", "hr_payroll", "hr_holidays", "hr_expense", "techcarrot_crm_mlr", "ticketing_it"],
+    "depends": ["portal", "hr", "hr_attendance", "hr_payroll", "hr_holidays", "hr_expense", "techcarrot_crm_mlr", "ticketing_it", "project"],
     "category": "Human Resources",
     "author": "Lovaraju Mylapalli",
     "website": "https://www.mlr.com",
