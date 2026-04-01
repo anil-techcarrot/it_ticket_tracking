@@ -1297,45 +1297,43 @@ class ITTicket(models.Model):
 
         _logger.info(f"Tickets found: {len(tickets)}")
 
-        template = self.env.ref(
-            'ticketing_it.email_template_access_end',  # ⚠️ fix module name
+        assignee_template = self.env.ref(
+            'ticketing_it.email_template_access_end_assignee',
             raise_if_not_found=False
         )
 
-        if not template:
-            _logger.error("Email template NOT found!")
-            return
+        employee_template = self.env.ref(
+            'ticketing_it.email_template_access_end_employee',
+            raise_if_not_found=False
+        )
 
         for ticket in tickets:
-            _logger.info(f"Processing Ticket ID: {ticket.id}, Name: {ticket.name}")
-
-            users = [
-                ticket.assigned_to_id.id if ticket.assigned_to_id.id else False,
-                ticket.employee_id.user_id.id if ticket.employee_id.user_id.id else False,
-            ]
-
-            users = [u for u in users if u]
-
-            _logger.info(f"Users to notify: {users}")
-
-            if not users:
-                _logger.warning(f"No users found for ticket {ticket.id}")
-                continue
-
             try:
-                template.send_mail(
-                    ticket.id,
-                    force_send=True,
-                    email_values={
-                        'recipient_ids': [(6, 0, users)]
-                    }
-                )
-                _logger.info(f"Email sent for ticket {ticket.id}")
+                # ✅ Assignee Email
+                if ticket.assigned_to_id:
+                    _logger.info(f"Sending to Assignee: {ticket.assigned_to_id.email}")
+                    assignee_template.send_mail(ticket.id, force_send=True,
+                                                email_values={
+                                                    'email_to': ticket.assigned_to_id.email,
+                                                    'recipient_ids': [(5, 0, 0)],
+                                                    'partner_ids': [(5, 0, 0)],
+                                                })
+
+                # ✅ Employee Email
+                if ticket.employee_id.user_id:
+                    _logger.info(f"Sending to Employee: {ticket.employee_id.email}")
+                    employee_template.send_mail(ticket.id, force_send=True,
+                                                email_values={
+                                                    'email_to': ticket.employee_id.email,
+                                                    'recipient_ids': [(5, 0, 0)],
+                                                    'partner_ids': [(5, 0, 0)],
+                                                })
 
             except Exception as e:
-                _logger.error(f"Error sending email for ticket {ticket.id}: {str(e)}")
+                _logger.error(f"Error for ticket {ticket.id}: {str(e)}")
 
         _logger.info("CRON END")
+
 
 
 class ITTicketWorkflowConfig(models.Model):
