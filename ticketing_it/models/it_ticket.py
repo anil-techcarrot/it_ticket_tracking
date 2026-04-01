@@ -1297,42 +1297,48 @@ class ITTicket(models.Model):
 
         _logger.info(f"Tickets found: {len(tickets)}")
 
-        assignee_template = self.env.ref(
-            'ticketing_it.email_template_access_end_assignee',
-            raise_if_not_found=False
-        )
-
-        employee_template = self.env.ref(
-            'ticketing_it.email_template_access_end_employee',
-            raise_if_not_found=False
-        )
+        _logger.info("Total tickets expiring in last minute: %s", len(tickets))
 
         for ticket in tickets:
             try:
-                # ✅ Assignee Email
-                if ticket.assigned_to_id:
-                    _logger.info(f"Sending to Assignee: {ticket.assigned_to_id.email}")
-                    assignee_template.send_mail(ticket.id, force_send=True,
-                                                email_values={
-                                                    'email_to': ticket.assigned_to_id.email,
-                                                    'recipient_ids': [(5, 0, 0)],
-                                                    'partner_ids': [(5, 0, 0)],
-                                                })
+                _logger.info("Processing Ticket: %s", ticket.name)
 
-                # ✅ Employee Email
-                if ticket.employee_id.user_id:
-                    _logger.info(f"Sending to Employee: {ticket.employee_id.email}")
-                    employee_template.send_mail(ticket.id, force_send=True,
-                                                email_values={
-                                                    'email_to': ticket.employee_id.email,
-                                                    'recipient_ids': [(5, 0, 0)],
-                                                    'partner_ids': [(5, 0, 0)],
-                                                })
+                # Assignee email
+                if ticket.assigned_to_id and ticket.assigned_to_id.email:
+                    assignee = ticket.assigned_to_id
+                    body = f"""
+                        <p>Dear {assignee.name},</p>
+                        <p>Access for ticket <b>{ticket.name}</b> has expired.</p>
+                        <p>Please take necessary action.</p>
+                    """
+                    mail_values = {
+                        'subject': f"Access Expired - {ticket.name}",
+                        'body_html': body,
+                        'email_to': assignee.email,
+                    }
+                    _logger.info("Sending email to assignee: %s", assignee.email)
+                    self.env['mail.mail'].sudo().create(mail_values).send()
+
+                # Employee email
+                if ticket.employee_id and ticket.employee_id.user_id and ticket.employee_id.email:
+                    employee = ticket.employee_id
+                    body = f"""
+                        <p>Dear {employee.name},</p>
+                        <p>Your access for ticket <b>{ticket.name}</b> has expired.</p>
+                        <p>Please contact IT if needed.</p>
+                    """
+                    mail_values = {
+                        'subject': f"Your Access Has Expired - {ticket.name}",
+                        'body_html': body,
+                        'email_to': employee.email,
+                    }
+                    _logger.info("Sending email to employee: %s", employee.email)
+                    self.env['mail.mail'].sudo().create(mail_values).send()
 
             except Exception as e:
-                _logger.error(f"Error for ticket {ticket.id}: {str(e)}")
+                _logger.error("Error processing ticket %s: %s", ticket.id, str(e))
 
-        _logger.info("CRON END")
+        _logger.info("===== CRON FINISHED =====")
 
 
 
