@@ -486,7 +486,8 @@ class PortalEmployeeSyncController(http.Controller):
         for keyword in india_keywords:
             if keyword in address:
                 company = request.env['res.company'].sudo().search(
-                    [('name', 'ilike', 'techcarrot India Private Limited')], limit=1
+                    [('name', '=', 'techcarrot India Private Limited')],  # ← changed ilike to =
+                    limit=1
                 )
                 if company:
                     _logger.info("Company assigned: %s for address: %s", company.name, current_address)
@@ -496,7 +497,8 @@ class PortalEmployeeSyncController(http.Controller):
         for keyword in uae_keywords:
             if keyword in address:
                 company = request.env['res.company'].sudo().search(
-                    [('name', 'ilike', 'techcarrot FZ-LLC')], limit=1
+                    [('name', '=', 'techcarrot FZ-LLC')],  # ← changed ilike to =
+                    limit=1
                 )
                 if company:
                     _logger.info("Company assigned: %s for address: %s", company.name, current_address)
